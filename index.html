@@ -89,10 +89,10 @@ if(it.trend==="flat")sc.cold_hot+=20;if(rh.score>0.3&&rh.score<0.6)sc.cold_hot+=
 var mx=Math.max.apply(null,Object.values(sc))||1;return Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return{class:e[0],confidence:Math.round(e[1]/mx*100)};});}
 
 function classify(fh){return new Promise(function(resolve,reject){if(fh.length<5){reject(new Error("Data tidak cukup"));return;}var ag=aggregate(fh);if(!ag){reject(new Error("Gagal"));return;}var rb=ruleClassify(ag);
-if(!window.__GROQ_KEY){resolve({predictions:rb.map(function(r){r.acoustic_evidence="Rule-based";return r;}),analysis:"F0="+ag.pitch.meanF0+"Hz, "+ag.rhythm.pattern+", "+ag.intensity.trend+".",contextual_advice:"Hasil rule-based. Perhatikan respons bayi.",urgency:ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});return;}
-var sys='Anda sistem analisis tangisan bayi. Evaluasi rule-based+fitur akustik. Pitch: Lapar=250-450Hz, Sakit=450-700Hz. Jitter tinggi=distress. HNR tinggi=tonal. Ritmis=lapar. Rising=lapar, Sustained=sakit, Falling=ngantuk. Output JSON saja: {"predictions":[{"class":"...","confidence":<0-100>,"acoustic_evidence":"..."}],"analysis":"2 kalimat ID","contextual_advice":"2 kalimat saran","urgency":"low|medium|high"}. Kelas: hungry,belly_pain,burping,discomfort,tired,lonely,scared,cold_hot,unknown. Maks 3.';
-var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},12000);
-fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"system",content:sys},{role:"user",content:"AKUSTIK:\n"+JSON.stringify(ag)+"\nRULE:\n"+JSON.stringify(rb)}],response_format:{type:"json_object"},temperature:0.3}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag};resolve(p);}).catch(function(){clearTimeout(tid);resolve({predictions:rb.map(function(r){r.acoustic_evidence="Rule-based (offline)";return r;}),analysis:"F0="+ag.pitch.meanF0+"Hz, "+ag.rhythm.pattern+".",contextual_advice:"Hasil rule-based otomatis.",urgency:ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});});});}
+if(!window.__GROQ_KEY){var topCls=rb[0]?rb[0].class:"unknown";var dbI=CRY_DB[topCls]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB, pola "+ag.rhythm.pattern;return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbI.desc+" "+dbI.steps[0].a+": "+dbI.steps[0].d+" "+dbI.steps[1].a+": "+dbI.steps[1].d,urgency:ag.pitch.meanF0>550?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});return;}
+var sys='Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil pre-klasifikasi. Tugas Anda: 1) Evaluasi apakah kelas prediksi cocok dengan fitur akustik. 2) Tulis analisis akustik NYATA berdasarkan data (contoh: "Frekuensi dasar terdeteksi pada 283 Hz dengan jitter tinggi 87.8% menunjukkan tangisan tidak stabil, khas pola kelelahan. HNR 5.87 dB menandakan komponen noise signifikan."). 3) Tulis saran NYATA dan spesifik (contoh: "Coba redupkan lampu dan ayun bayi perlahan. Jika sudah lebih dari 1.5 jam sejak tidur terakhir, kemungkinan besar bayi butuh tidur."). JANGAN tulis placeholder seperti "2 kalimat" — tulis konten sesungguhnya. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis akustik nyata dalam bahasa Indonesia","contextual_advice":"tulis saran praktis nyata dalam bahasa Indonesia","urgency":"low|medium|high"} Maksimal 3 prediksi.';
+var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
+fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:"Data akustik teragregasi:\n"+JSON.stringify(ag,null,1)+"\n\nHasil pre-klasifikasi rule-based:\n"+JSON.stringify(rb,null,1)+"\n\nBerikan analisis dan saran yang spesifik berdasarkan data di atas."}],response_format:{type:"json_object"},temperature:0.4,max_tokens:800}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag};resolve(p);}).catch(function(e){clearTimeout(tid);var topClass=rb[0]?rb[0].class:"unknown";var dbItem=CRY_DB[topClass]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="Analisis rule-based: F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB";return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbItem.desc+" "+dbItem.steps[0].a+": "+dbItem.steps[0].d,urgency:ag.pitch.meanF0>550&&ag.intensity.maxAmp>50?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});});});}
 
 function Spectrogram(props){var ref=useRef(null);useEffect(function(){if(!ref.current||!props.data.length)return;var c=ref.current,x=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);var W=r.width,H=r.height,n=props.data.length,mb=props.data[0].melEnergies.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;props.data.forEach(function(f){f.melEnergies.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=props.data[f].melEnergies,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle="rgba(10,132,255,"+Math.pow(nm,0.7)*0.8+")";x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[props.data]);
 return html`<div style=${{position:"relative"}}><canvas ref=${ref} style=${{width:"100%",height:100,borderRadius:16,border:"1px solid rgba(0,0,0,0.04)",background:"rgba(255,255,255,0.4)"}}/>${props.rec&&html`<div style=${{position:"absolute",top:8,right:10,background:"#FF453A",borderRadius:20,padding:"4px 12px",fontSize:11,color:"#FFF",fontWeight:700,animation:"blink 1.5s infinite",display:"flex",alignItems:"center",gap:4}}><div style=${{width:6,height:6,borderRadius:3,background:"#FFF"}}/>REC</div>`}</div>`;}
@@ -107,6 +107,72 @@ ${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>${[["Ritme",(ag.rhythm.score*100).toFixed(0)+"%"],["Pola",ag.rhythm.pattern],["Bout",ag.rhythm.boutCount+"x"],["Intensitas",ag.intensity.trend]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
 ${props.diag.fallback&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:12,color:"#FF9F0A",fontWeight:600}}>Fallback: Rule-based tanpa LLM</div>`}
 </div>`}</div>`;}
+
+function chatWithAI(question,context){
+return new Promise(function(resolve){
+if(!window.__GROQ_KEY){resolve("API Key belum diatur. Silakan atur API Key Groq terlebih dahulu.");return;}
+var sys="Anda adalah dokter anak AI yang ramah dan informatif. Anda baru saja menganalisis tangisan bayi dengan hasil berikut. Jawab pertanyaan orang tua dalam bahasa Indonesia dengan jelas, praktis, dan empatik. Berikan informasi medis yang akurat. Jika pertanyaan di luar keahlian, sarankan konsultasi dokter. JANGAN gunakan markdown/formatting — tulis paragraf biasa saja. Batasi jawaban maksimal 3-4 paragraf.";
+var contextMsg="KONTEKS HASIL ANALISIS TANGISAN:\n"+JSON.stringify(context,null,1);
+var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
+fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:contextMsg+"\n\nPERTANYAAN ORANG TUA: "+question}],temperature:0.5,max_tokens:600}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);resolve(d.choices[0].message.content);}).catch(function(e){clearTimeout(tid);resolve("Maaf, gagal menghubungi AI: "+(e.message||"timeout")+". Coba lagi.");});});
+}
+
+function FollowUpChat(props){
+var _msgs=useState([]),msgs=_msgs[0],setMsgs=_msgs[1];
+var _inp=useState(""),inp=_inp[0],setInp=_inp[1];
+var _loading=useState(false),loading=_loading[0],setLoading=_loading[1];
+var _open=useState(false),open=_open[0],setOpen=_open[1];
+var scrollRef=useRef(null);
+
+var quickQs=[
+"Apa ciri khas tangisan lapar vs mengantuk?",
+"Kapan harus ke dokter?",
+"Bagaimana teknik menenangkan yang efektif?",
+"Apakah tangisan ini normal untuk usia bayi?"
+];
+
+function send(q){
+var question=q||inp.trim();if(!question||loading)return;
+setInp("");setLoading(true);
+setMsgs(function(prev){return prev.concat([{role:"user",text:question}]);});
+var ctx={predictions:props.results,analysis:props.aiAn,advice:props.aiAd,diagnostics:props.diag?props.diag.ag:null};
+chatWithAI(question,ctx).then(function(answer){setLoading(false);setMsgs(function(prev){return prev.concat([{role:"ai",text:answer}]);});
+setTimeout(function(){if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;},100);
+});
+}
+
+var suggestionsToShow=msgs.length===0?quickQs:[];
+
+return html`<div className="gl" style=${{overflow:"hidden",marginTop:14}}>
+<button onClick=${function(){setOpen(!open);}} style=${{width:"100%",padding:"16px 20px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"inherit"}}>
+<div style=${{width:36,height:36,borderRadius:12,background:"rgba(50,215,75,0.12)",display:"flex",alignItems:"center",justifyContent:"center",color:"#32D74B"}}><${Icon} name="help" size=${20}/></div>
+<div style=${{flex:1,textAlign:"left"}}><div style=${{fontWeight:600,fontSize:15,color:"#1C1C1E"}}>Tanya AI Lanjutan</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>Tanyakan tentang gejala, penanganan, dll</div></div>
+<span style=${{fontSize:12,color:"#C7C7CC",transform:open?"rotate(90deg)":"none",transition:"0.2s"}}>▶</span>
+</button>
+
+${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
+
+${suggestionsToShow.length>0&&html`<div style=${{marginBottom:14}}>
+<div style=${{fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>Pertanyaan Cepat</div>
+<div style=${{display:"flex",flexWrap:"wrap",gap:8}}>
+${suggestionsToShow.map(function(q,i){return html`<button key=${i} onClick=${function(){send(q);}} style=${{background:"rgba(50,215,75,0.08)",border:"1px solid rgba(50,215,75,0.2)",borderRadius:14,padding:"8px 14px",fontSize:13,fontWeight:500,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.3}}>${q}</button>`;})}
+</div>
+</div>`}
+
+${msgs.length>0&&html`<div ref=${scrollRef} style=${{maxHeight:320,overflowY:"auto",marginBottom:14,display:"flex",flexDirection:"column",gap:10,WebkitOverflowScrolling:"touch"}}>
+${msgs.map(function(m,i){return m.role==="user"?html`<div key=${i} style=${{alignSelf:"flex-end",background:"#0A84FF",color:"#FFF",padding:"10px 16px",borderRadius:"18px 18px 4px 18px",fontSize:14,lineHeight:1.5,maxWidth:"85%",animation:"fadeIn 0.3s"}}>${m.text}</div>`:html`<div key=${i} style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"12px 16px",borderRadius:"18px 18px 18px 4px",fontSize:14,lineHeight:1.6,maxWidth:"90%",color:"#1C1C1E",animation:"fadeIn 0.3s"}}>${m.text}</div>`;})}
+${loading&&html`<div style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"12px 16px",borderRadius:"18px 18px 18px 4px",fontSize:14,color:"#8E8E93",display:"flex",alignItems:"center",gap:8,animation:"fadeIn 0.3s"}}><div style=${{width:6,height:6,borderRadius:3,background:"#8E8E93",animation:"blink 1s infinite"}}/> Sedang menjawab...</div>`}
+</div>`}
+
+<div style=${{display:"flex",gap:8}}>
+<input type="text" value=${inp} onInput=${function(e){setInp(e.target.value);}} onKeyDown=${function(e){if(e.key==="Enter")send();}} placeholder="Tanyakan tentang gejala bayi..." style=${{flex:1,padding:"12px 16px",borderRadius:16,border:"1px solid rgba(0,0,0,0.08)",fontSize:15,background:"rgba(0,0,0,0.02)",outline:"none",fontFamily:"inherit"}}/>
+<button onClick=${function(){send();}} disabled=${loading||!inp.trim()} style=${{width:48,height:48,borderRadius:16,border:"none",background:inp.trim()?"#32D74B":"rgba(0,0,0,0.05)",color:inp.trim()?"#FFF":"#C7C7CC",cursor:inp.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+</button>
+</div>
+</div>`}
+</div>`;
+}
 
 function ResultCard(props){var pred=props.pred,rank=props.rank,db=CRY_DB[pred.class]||CRY_DB.unknown,top=rank===0;var _o=useState(top),open=_o[0],setOpen=_o[1];var _t=useState("steps"),tab=_t[0],setTab=_t[1];
 return html`<div className="gl" style=${{background:top?"linear-gradient(135deg,"+db.colorLight+"DD,rgba(255,255,255,0.9))":"rgba(255,255,255,0.7)",animation:"slideUp 0.6s cubic-bezier(0.2,0.8,0.2,1) "+rank*0.1+"s both",overflow:"hidden"}}>
@@ -180,13 +246,14 @@ ${results.map(function(p,i){return html`<${ResultCard} key=${p.class} pred=${p} 
 ${aiAd&&html`<div className="gl" style=${{background:"rgba(191,90,242,0.06)",border:"1px solid rgba(191,90,242,0.15)",padding:20}}><div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><div style=${{width:32,height:32,borderRadius:10,background:"rgba(191,90,242,0.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#BF5AF2"}}><${Icon} name="bot" size=${18}/></div><span style=${{fontWeight:600,fontSize:15,color:"#BF5AF2"}}>Rekomendasi AI</span></div><p style=${{fontSize:15,lineHeight:1.6,margin:0}}>${aiAd}</p></div>`}
 ${aiAn&&html`<div className="gl" style=${{background:"rgba(10,132,255,0.06)",border:"1px solid rgba(10,132,255,0.15)",padding:20}}><div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><div style=${{width:32,height:32,borderRadius:10,background:"rgba(10,132,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0A84FF"}}><${Icon} name="cpu" size=${18}/></div><span style=${{fontWeight:600,fontSize:15,color:"#0A84FF"}}>Analisis Akustik</span></div><p style=${{fontSize:15,color:"#48484A",lineHeight:1.6,margin:0}}>${aiAn}</p></div>`}
 <${DiagPanel} diag=${diag}/>
+<${FollowUpChat} results=${results} aiAn=${aiAn} aiAd=${aiAd} diag=${diag}/>
 <button onClick=${reset} style=${{background:"rgba(0,0,0,0.05)",border:"none",borderRadius:20,padding:"18px 0",fontWeight:600,fontSize:17,color:"#0A84FF",cursor:"pointer",width:"100%",marginTop:10}}>Rekam Ulang</button>
 </div>`}
 
 ${phase==="idle"&&!err&&html`<div style=${{animation:"slideUp 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.1s both"}}>
 <div className="gl" style=${{padding:24,marginTop:16}}><div style=${{fontWeight:700,fontSize:18,marginBottom:18}}>Pipeline v2</div>
 <div style=${{display:"flex",flexDirection:"column",gap:10}}>
-${[{s:"1",t:"Feature Extraction",d:"F0, Jitter, Shimmer, HNR, Mel-32",c:"#0A84FF"},{s:"2",t:"Temporal Analysis",d:"Bout detection, rhythmicity",c:"#BF5AF2"},{s:"3",t:"Rule-Based Classifier",d:"Scoring literatur akustik",c:"#FF9F0A"},{s:"4",t:"LLM Refinement",d:"Llama-3.1 evaluasi koherensi",c:"#32D74B"}].map(function(st){return html`<div key=${st.s} className="gi" style=${{padding:14,display:"flex",gap:12}}><div style=${{width:28,height:28,borderRadius:8,background:st.c+"15",display:"flex",alignItems:"center",justifyContent:"center",color:st.c,fontSize:13,fontWeight:700,flexShrink:0}}>${st.s}</div><div><div style=${{fontWeight:600,fontSize:14}}>${st.t}</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>${st.d}</div></div></div>`;})}
+${[{s:"1",t:"Feature Extraction",d:"F0, Jitter, Shimmer, HNR, Mel-32",c:"#0A84FF"},{s:"2",t:"Temporal Analysis",d:"Bout detection, rhythmicity",c:"#BF5AF2"},{s:"3",t:"Rule-Based Classifier",d:"Scoring literatur akustik",c:"#FF9F0A"},{s:"4",t:"LLM Refinement",d:"Llama-3.3 70B evaluasi koherensi",c:"#32D74B"},{s:"5",t:"Tanya AI Lanjutan",d:"Chat follow-up gejala & saran",c:"#FF453A"}].map(function(st){return html`<div key=${st.s} className="gi" style=${{padding:14,display:"flex",gap:12}}><div style=${{width:28,height:28,borderRadius:8,background:st.c+"15",display:"flex",alignItems:"center",justifyContent:"center",color:st.c,fontSize:13,fontWeight:700,flexShrink:0}}>${st.s}</div><div><div style=${{fontWeight:600,fontSize:14}}>${st.t}</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>${st.d}</div></div></div>`;})}
 </div></div>
 <div style=${{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
 <p style=${{fontSize:13,color:"#C7C7CC"}}>Powered by Groq Cloud API</p>
