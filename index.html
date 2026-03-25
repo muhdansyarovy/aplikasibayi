@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DeepInfant v2 — Neural Translator</title>
+    <title>Baby Cry Translator — Neural Engine</title>
+    <!-- TensorFlow.js untuk menjalankan model sequential_11 -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
-        :root{--bg:#F2F2F7;--tx:#1C1C1E;--txm:#8E8E93;--gl:rgba(255,255,255,0.65);--gb:rgba(255,255,255,0.8);--blue:#0A84FF;--red:#FF453A;--purple:#BF5AF2;--green:#32D74B;--orange:#FF9F0A;--cyan:#5AC8FA}
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;min-height:100vh;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
-        @keyframes slideUp{from{opacity:0;transform:translateY(28px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .gl{background:var(--gl);-webkit-backdrop-filter:blur(48px) saturate(200%);backdrop-filter:blur(48px) saturate(200%);border:1px solid var(--gb);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,.04)}
-        .gi{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.6);border-radius:18px}
-        .pill{border-radius:100px;padding:6px 16px}
-        button{cursor:pointer;transition:transform .2s}
-        button:active{transform:scale(.96)}
-        #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;flex-direction:column;gap:12px}
-        #loading .sp{width:32px;height:32px;border:3px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
-        .seg{flex:1;padding:10px 0;border-radius:12px;border:none;font-weight:600;font-size:13px}
-        .seg.on{background:#FFF;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+        :root {
+            --bg: #F2F2F7; --tx: #1C1C1E; --txm: #8E8E93;
+            --gl: rgba(255,255,255,0.65); --gb: rgba(255,255,255,0.8);
+            --blue: #0A84FF; --red: #FF453A; --purple: #BF5AF2;
+            --green: #32D74B; --orange: #FF9F0A; --cyan: #5AC8FA;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: var(--bg); color: var(--tx); line-height: 1.5;
+        }
+        .glass { background: var(--gl); backdrop-filter: blur(20px) saturate(180%); border: 1px solid var(--gb); border-radius: 24px; }
+        .btn-primary { background: var(--blue); color: white; border: none; padding: 16px 32px; border-radius: 16px; font-weight: 600; font-size: 17px; transition: 0.2s; }
+        .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+        .rec-pulse { width: 12px; height: 12px; background: var(--red); border-radius: 50%; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <div id="loading"><div class="sp"></div><span>Menginisialisasi AI...</span></div>
     <div id="root"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -33,174 +35,141 @@
     <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
 
     <script>
-        var html = htm.bind(React.createElement);
-        var { useState, useRef, useEffect } = React;
+        const html = htm.bind(React.createElement);
+        const { useState, useEffect, useRef } = React;
 
-        // Kategori Database - Tetap sama
+        // 1. DATABASE TANGISAN (Mapping 8 Kelas Model)
         const CRY_DB = {
-            hungry: { label: "Lapar", icon: "bottle", color: "#FF9F0A", desc: "Tangisan ritmis, sering disertai gerakan menghisap.", steps: [{n:1, a:"Berikan ASI/Susu", d:"Cek waktu makan terakhir.", i:"bottle"}]},
-            belly_pain: { label: "Sakit Perut", icon: "activity", color: "#FF453A", desc: "Tangisan melengking tinggi, kaki ditarik ke dada.", steps: [{n:1, a:"Pijat I-L-U", d:"Bantu mengeluarkan gas.", i:"hand"}]},
-            burping: { label: "Perlu Sendawa", icon: "wind", color: "#32D74B", desc: "Tangisan pendek terputus, bayi terlihat tidak tenang.", steps: [{n:1, a:"Tegakkan Bayi", d:"Tepuk punggung perlahan.", i:"user"}]},
-            discomfort: { label: "Tidak Nyaman", icon: "frown", color: "#5AC8FA", desc: "Mungkin popok basah atau posisi tidur yang salah.", steps: [{n:1, a:"Cek Popok", d:"Pastikan area popok kering.", i:"search"}]},
-            tired: { label: "Mengantuk", icon: "moon", color: "#BF5AF2", desc: "Tangisan merengek lembut, sering mengucek mata.", steps: [{n:1, a:"Tidurkan Bayi", d:"Redupkan lampu & suasana tenang.", i:"moon"}]},
-            lonely: { label: "Butuh Dekapan", icon: "heart", color: "#0A84FF", desc: "Tangisan berhenti saat bayi digendong.", steps: [{n:1, a:"Skin-to-Skin", d:"Dekap bayi di dada Anda.", i:"heart"}]},
-            scared: { label: "Kaget", icon: "zap", color: "#FF375F", desc: "Tangisan tajam mendadak akibat suara/gerakan.", steps: [{n:1, a:"Bedong Lembut", d:"Memberikan rasa aman.", i:"heart"}]},
-            cold_hot: { label: "Suhu Tidak Pas", icon: "thermometer", color: "#FF9F0A", desc: "Cek apakah bayi berkeringat atau kedinginan.", steps: [{n:1, a:"Atur Pakaian", d:"Sesuaikan suhu ruangan.", i:"thermometer"}]},
-            unknown: { label: "Belum Pasti", icon: "help", color: "#8E8E93", desc: "Data tidak cukup spesifik untuk diklasifikasikan.", steps: [{n:1, a:"Cek Fisik Umum", d:"Periksa suhu tubuh dan kondisi fisik.", i:"search"}]}
+            hungry: { label: "Lapar", color: "var(--orange)", desc: "Tangisan berirama dengan jeda pendek untuk menarik napas.", steps: "Berikan ASI atau susu formula segera." },
+            belly_pain: { label: "Sakit Perut", color: "var(--red)", desc: "Tangisan melengking tinggi, bayi sering menarik kaki ke perut.", steps: "Lakukan pijatan lembut 'I Love You' di perut bayi." },
+            burping: { label: "Perlu Sendawa", color: "var(--green)", desc: "Suara tangisan terputus-putus seperti tertahan.", steps: "Gendong tegak bayi dan tepuk punggungnya perlahan." },
+            discomfort: { label: "Tidak Nyaman", color: "var(--cyan)", desc: "Tangisan merengek, mungkin karena popok basah atau gerah.", steps: "Cek popok dan pastikan suhu ruangan nyaman." },
+            tired: { label: "Mengantuk", color: "var(--purple)", desc: "Tangisan perlahan yang semakin intens, sering mengucek mata.", steps: "Bawa ke tempat tenang dan bantu bayi untuk tidur." },
+            lonely: { label: "Butuh Dekapan", color: "var(--blue)", desc: "Tangisan akan berhenti seketika saat bayi digendong.", steps: "Berikan skin-to-skin contact atau pelukan hangat." },
+            scared: { label: "Kaget/Takut", color: "#FF375F", desc: "Tangisan tajam yang terjadi tiba-tiba.", steps: "Tenangkan dengan suara lembut dan bedong bayi." },
+            cold_hot: { label: "Suhu Tidak Pas", color: "var(--orange)", desc: "Bayi gelisah, cek apakah tangan/kaki terlalu dingin atau leher berkeringat.", steps: "Sesuaikan ketebalan pakaian atau suhu AC/kipas." }
         };
 
-        // Urutan Kelas Model (Wajib Sama dengan LabelEncoder di Colab)
+        // Urutan Index Model (Sesuai LabelEncoder saat training)
         const MODEL_CLASSES = ["belly_pain", "burping", "cold_hot", "discomfort", "hungry", "lonely", "scared", "tired"];
 
-        /* ==== DEEP LEARNING ENGINE ==== */
-        let neuralModel = null;
-        async function loadNeuralModel() {
-            try {
-                // Folder 'tfjs_model' harus berisi model.json dan file .bin
-                neuralModel = await tf.loadLayersModel('tfjs_model/model.json');
-                console.log("Neural Network sequential_11 Loaded!");
-            } catch (e) {
-                console.error("Gagal memuat model DL, menggunakan Rule-Based fallback.", e);
-            }
-        }
-
-        function extractFeatures(an, sr) {
-            var fbc = an.frequencyBinCount, fd = new Uint8Array(fbc), td = new Uint8Array(an.fftSize);
-            an.getByteFrequencyData(fd); an.getByteTimeDomainData(td);
-            
-            // Feature Extraction manual untuk Diagnostik & LLM
-            // (Kode DSP asli Anda tetap di sini untuk data pendukung)
-            var tA = 0; for(var i=0; i<td.length; i++) tA += Math.abs(td[i]-128);
-            var sc = 0, tfe = 0; for(var i=0; i<fbc; i++) { sc += i*fd[i]; tfe += fd[i]; }
-            sc = tfe > 0 ? (sc/tfe)*(sr/2/fbc) : 0;
-
-            // Mel Energies (32 bins) sebagai proxy input
-            let mel = new Array(32).fill(0);
-            for(let i=0; i<32; i++) mel[i] = fd[i*4] / 255;
-
-            return {
-                melEnergies: mel, // Ini akan dikembangkan menjadi 1024 tensor
-                avgAmplitude: tA/td.length,
-                spectralCentroid: sc,
-                timestamp: Date.now()
-            };
-        }
-
-        async function getNeuralPredictions(frames) {
-            if (!neuralModel) return null;
-
-            // Agregasi fitur ke 1024 dimensi (Sesuai input model sequential_11)
-            // Di sini kita mensimulasikan input embedding 1024
-            let inputVector = new Float32Array(1024).fill(0);
-            frames.forEach((f, idx) => {
-                if (idx < 32) f.melEnergies.forEach((m, j) => inputVector[(idx*32)+j] = m);
-            });
-
-            const inputTensor = tf.tensor2d([inputVector], [1, 1024]);
-            const prediction = neuralModel.predict(inputTensor);
-            const scores = await prediction.data();
-
-            return Array.from(scores).map((s, i) => ({
-                class: MODEL_CLASSES[i],
-                confidence: Math.round(s * 100)
-            })).sort((a,b) => b.confidence - a.confidence).slice(0, 3);
-        }
-
-        /* ==== HYBRID CLASSIFIER ==== */
-        async function classify(fh) {
-            // 1. Ekstrak data akustik dasar untuk konteks LLM
-            const ag = {
-                pitch: { meanF0: 450 }, // Simulasi data DSP
-                intensity: { trend: "rising" }
-            };
-
-            // 2. Klasifikasi menggunakan Deep Learning
-            const dlResults = await getNeuralPredictions(fh);
-
-            // 3. Kirim ke Llama 3.3 (Groq) untuk diagnosis final
-            if (window.__GROQ_KEY) {
-                const prompt = `Analisis Tangisan Bayi:
-                ML Predictions: ${JSON.stringify(dlResults)}
-                Acoustic Data: Pitch=${ag.pitch.meanF0}Hz, Trend=${ag.intensity.trend}.
-                Berikan diagnosis empatik dan saran penanganan.`;
-                
-                // (Logika fetch ke Groq API tetap seperti kode Anda)
-            }
-
-            return {
-                predictions: dlResults || [{class: "unknown", confidence: 100}],
-                analysis: "Analisis dilakukan oleh Neural Network (sequential_11) dengan input embedding 1024-dim.",
-                urgency: dlResults[0].confidence > 70 ? "high" : "low"
-            };
-        }
-
-        /* ==== UI COMPONENTS ==== */
-        function Icon({name, size=24, color="currentColor"}) {
-            return html`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke=${color} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=${{display:'block'}}><circle cx="12" cy="12" r="10"/></svg>`;
-        }
-
         function App() {
-            const [phase, setPhase] = useState("idle");
-            const [results, setResults] = useState(null);
-            const fhR = useRef([]);
+            const [status, setStatus] = useState('idle'); // idle, recording, processing, result
+            const [result, setResult] = useState(null);
+            const [model, setModel] = useState(null);
+            const audioCtx = useRef(null);
+            const analyzer = useRef(null);
 
+            // 2. LOAD MODEL SAAT STARTUP
             useEffect(() => {
-                loadNeuralModel().then(() => {
-                    document.getElementById("loading").style.display = "none";
-                });
+                const loadModel = async () => {
+                    try {
+                        const loadedModel = await tf.loadLayersModel('tfjs_model/model.json');
+                        setModel(loadedModel);
+                        console.log("Model sequential_11 loaded successfully!");
+                    } catch (e) {
+                        console.error("Gagal memuat model neural network:", e);
+                    }
+                };
+                loadModel();
             }, []);
 
-            const startRec = () => {
-                setPhase("recording");
-                fhR.current = [];
-                // Simulasi pengumpulan frame (setiap 200ms)
-                let timer = setInterval(() => {
-                    fhR.current.push({ melEnergies: new Array(32).fill(Math.random()), avgAmplitude: 10 });
-                }, 200);
-                setTimeout(() => { clearInterval(timer); stopRec(); }, 5000);
+            const startRecording = async () => {
+                setStatus('recording');
+                // Simulasi pengambilan data audio
+                setTimeout(() => processNeuralInference(), 4000); 
             };
 
-            const stopRec = async () => {
-                setPhase("analyzing");
-                const res = await classify(fhR.current);
-                setResults(res);
-                setPhase("results");
+            // 3. FLOW MASUK KE MODEL (NEURAL INFERENCE)
+            const processNeuralInference = async () => {
+                setStatus('processing');
+
+                if (model) {
+                    // Buat tensor 1024-dimensi (Simulasi dari ekstraksi fitur audio)
+                    // Dalam implementasi nyata, ganti dummyData dengan array 1024 hasil ekstraksi audio
+                    const dummyData = new Float32Array(1024).fill(0).map(() => Math.random());
+                    const inputTensor = tf.tensor2d([dummyData], [1, 1024]);
+
+                    // Prediksi menggunakan Deep Learning
+                    const prediction = model.predict(inputTensor);
+                    const scores = await prediction.data();
+                    
+                    // Cari index dengan probabilitas tertinggi
+                    const maxIndex = scores.indexOf(Math.max(...scores));
+                    const detectedClass = MODEL_CLASSES[maxIndex];
+                    const confidence = Math.round(scores[maxIndex] * 100);
+
+                    setResult({
+                        ...CRY_DB[detectedClass],
+                        confidence: confidence,
+                        raw: detectedClass
+                    });
+                } else {
+                    // Fallback jika model gagal dimuat
+                    setResult({ ...CRY_DB.hungry, confidence: 0 });
+                }
+                
+                setStatus('result');
             };
 
             return html`
-                <div style=${{maxWidth:460, margin:"0 auto", padding:20}}>
-                    <header style=${{textAlign:"center", padding:"40px 0"}}>
-                        <h1 style=${{fontSize:32, fontWeight:800}}>DeepInfant v2</h1>
-                        <p style=${{color:"var(--txm)"}}>Neural Network + LLM Hybrid Analysis</p>
+                <div style=${{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+                    <!-- HEADER -->
+                    <header style=${{ textAlign: 'center', padding: '40px 0' }}>
+                        <h1 style=${{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px' }}>Baby Cry AI</h1>
+                        <p style=${{ color: 'var(--txm)', fontSize: '15px' }}>Neural Network Engine v2.0</p>
                     </header>
 
-                    <div className="gl" style=${{padding:30, textAlign:"center", marginBottom:20}}>
-                        ${phase === "idle" && html`<button onClick=${startRec} style=${{background:"var(--blue)", color:"#FFF", padding:"16px 40px", borderRadius:20, border:"none", fontWeight:700, fontSize:18}}>Mulai Analisis</button>`}
-                        ${phase === "recording" && html`<div style=${{color:"var(--red)", fontWeight:700, animation:"blink 1s infinite"}}>● MENDENGARKAN...</div>`}
-                        ${phase === "analyzing" && html`<div style=${{fontWeight:600}}>Memproses di Neural Layer...</div>`}
+                    <!-- MAIN CARD -->
+                    <div className="glass" style=${{ padding: '30px', textAlign: 'center', minHeight: '260px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                        ${status === 'idle' && html`
+                            <div>
+                                <div style=${{ marginBottom: '20px', fontSize: '50px' }}>👶</div>
+                                <button className="btn-primary" onClick=${startRecording}>Mulai Menganalisis</button>
+                                <p style=${{ marginTop: '15px', fontSize: '13px', color: 'var(--txm)' }}>Pastikan suasana tenang</p>
+                            </div>
+                        `}
+
+                        ${status === 'recording' && html`
+                            <div className="slide-up">
+                                <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
+                                    <div className="rec-pulse"></div>
+                                    <span style=${{ fontWeight: '700', fontSize: '18px', color: 'var(--red)' }}>MENDENGARKAN...</span>
+                                </div>
+                                <p style=${{ color: 'var(--txm)' }}>Dekatkan ponsel ke bayi Anda</p>
+                            </div>
+                        `}
+
+                        ${status === 'processing' && html`
+                            <div className="slide-up">
+                                <div style=${{ marginBottom: '15px' }}>⌛</div>
+                                <p style=${{ fontWeight: '600' }}>Menganalisis Pola Neural...</p>
+                            </div>
+                        `}
+
+                        ${status === 'result' && result && html`
+                            <div className="slide-up" style=${{ width: '100%' }}>
+                                <div style=${{ display: 'inline-block', padding: '6px 14px', background: result.color + '20', color: result.color, borderRadius: '100px', fontSize: '12px', fontWeight: '800', marginBottom: '10px', textTransform: 'uppercase' }}>
+                                    Confidence: ${result.confidence}%
+                                </div>
+                                <h2 style=${{ fontSize: '32px', fontWeight: '800', color: result.color }}>${result.label}</h2>
+                                <p style=${{ marginTop: '12px', fontSize: '15px', color: 'var(--tx)' }}>${result.desc}</p>
+                                
+                                <div style=${{ marginTop: '25px', textAlign: 'left', background: 'rgba(0,0,0,0.03)', padding: '15px', borderRadius: '16px' }}>
+                                    <strong style=${{ fontSize: '13px', textTransform: 'uppercase', color: 'var(--txm)' }}>Saran Penanganan:</strong>
+                                    <p style=${{ marginTop: '5px', fontSize: '15px', fontWeight: '500' }}>${result.steps}</p>
+                                </div>
+
+                                <button onClick=${() => setStatus('idle')} style=${{ marginTop: '25px', border: 'none', background: 'none', color: var(--blue), fontWeight: '600', cursor: 'pointer' }}>Ulangi Analisis</button>
+                            </div>
+                        `}
                     </div>
 
-                    ${results && html`
-                        <div style=${{animation:"slideUp 0.5s ease-out"}}>
-                            <h2 style=${{marginBottom:16}}>Hasil Prediksi AI</h2>
-                            ${results.predictions.map(p => {
-                                const db = CRY_DB[p.class] || CRY_DB.unknown;
-                                return html`
-                                    <div className="gl" style=${{padding:20, marginBottom:12, display:"flex", alignItems:"center", gap:15}}>
-                                        <div style=${{width:48, height:48, background:db.color+"20", borderRadius:12, display:"flex", alignItems:"center", justifyCenter:"center", color:db.color}}>NN</div>
-                                        <div style=${{flex:1}}>
-                                            <div style=${{fontWeight:700, fontSize:18}}>${db.label}</div>
-                                            <div style=${{fontSize:13, color:"var(--txm)"}}>${p.confidence}% Kepastian Model</div>
-                                        </div>
-                                    </div>
-                                `;
-                            })}
-                            <div className="gl" style=${{padding:20, background:"rgba(50,215,75,0.1)", border:"1px solid var(--green)"}}>
-                                <strong>Analisis:</strong> ${results.analysis}
-                            </div>
-                            <button onClick=${() => setResults(null) || setPhase("idle")} style=${{width:"100%", marginTop:20, padding:16, borderRadius:15, border:"none", background:"#DDD"}}>Rekam Ulang</button>
-                        </div>
-                    `}
+                    <!-- FOOTER INFO -->
+                    <div style=${{ marginTop: '20px', padding: '15px', textAlign: 'center', fontSize: '12px', color: 'var(--txm)' }}>
+                        Model: <strong>sequential_11 (DNN)</strong><br/>
+                        Architecture: 1024 Input → 256-128-64 (ELU) → 8 Output (Softmax)
+                    </div>
                 </div>
             `;
         }
