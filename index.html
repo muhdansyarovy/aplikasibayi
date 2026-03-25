@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A84FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2v20M17 7v10M7 7v10M22 10v4M2 10v4'/></svg>">
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 <style>
 :root{--bg:#F2F2F7;--tx:#1C1C1E;--txm:#8E8E93;--gl:rgba(255,255,255,0.65);--gb:rgba(255,255,255,0.8);--blue:#0A84FF;--red:#FF453A;--purple:#BF5AF2;--green:#32D74B;--orange:#FF9F0A;--cyan:#5AC8FA}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -32,9 +31,11 @@ canvas{display:block}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;font-size:16px;color:var(--txm);flex-direction:column;gap:12px}
 #loading .sp{width:32px;height:32px;border:3px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
 </style>
+<!-- Tambahan Script TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 </head>
 <body>
-<div id="loading"><div class="sp"></div><span>Memuat...</span></div>
+<div id="loading"><div class="sp"></div><span>Memuat Model & Sistem...</span></div>
 <div id="root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -59,49 +60,7 @@ scared:{id:"scared",label:"Kaget/Takut",labelEn:"Scared",icon:"zap",color:"#FF45
 cold_hot:{id:"cold_hot",label:"Suhu Tdk Nyaman",labelEn:"Cold/Hot",icon:"thermometer",color:"#5AC8FA",colorLight:"#E0F5FF",desc:"Tangisan kontinu, ketidaknyamanan suhu.",steps:[{n:1,a:"Cek suhu",d:"Sentuh dada/punggung.",i:"thermometer"},{n:2,a:"Sesuaikan pakaian",d:"Dewasa + 1 lapisan.",i:"user"},{n:3,a:"Atur ruangan",d:"Ideal 20-22°C.",i:"home"},{n:4,a:"Periksa tanda",d:"Panas: merah. Dingin: pucat.",i:"search"}],warns:["Suhu >38°C/<36°C pada <3bln","Kulit kebiruan"],tips:[{t:"Cek Suhu",d:"Raba dada, BUKAN tangan/kaki."},{t:"Lapisan",d:"Overheating LEBIH BAHAYA."}]},
 unknown:{id:"unknown",label:"Tdk Dikenali",labelEn:"Unknown",icon:"help",color:"#8E8E93",colorLight:"#F2F2F7",desc:"Pola tidak cocok kategori.",steps:[{n:1,a:"Checklist",d:"Lapar? Popok? Lelah? Suhu?",i:"file"},{n:2,a:"Periksa fisik",d:"Jari, ruam, bengkak.",i:"search"},{n:3,a:"Teknik menenangkan",d:"Skin-to-skin, 5S, white noise.",i:"heart"},{n:4,a:"Catat & konsultasi",d:"Kapan, berapa lama.",i:"file"}],warns:["Tangisan >3 jam","Kaku/lemas abnormal","Demam+muntah+diare","Insting salah — PERCAYA"],tips:[{t:"Checklist",d:"Popok-Lapar-Suhu-Posisi-Gas."},{t:"Ke Dokter",d:"Tangisan >3jam, demam, lemas."}]}};
 
-/* ==== NEURAL ENGINE ==== */
-var neuralModel = null;
-var MODEL_CLASSES = ["belly_pain", "burping", "cold_hot", "discomfort", "hungry", "lonely", "scared", "tired"];
-
-async function loadNeuralModel() {
-    try {
-        neuralModel = await tf.loadLayersModel('tfjs_model/model.json');
-        console.log("Model sequential_11 loaded.");
-    } catch (e) {
-        console.warn("Gagal memuat model Neural Network. Fallback ke sistem Rule-Based.", e);
-    } finally {
-        var el = document.getElementById("loading");
-        if (el) el.style.display = "none";
-    }
-}
-
-async function getNeuralPredictions(fh) {
-    if (!neuralModel) return null;
-    try {
-        let inputVector = new Float32Array(1024).fill(0);
-        let framesToUse = fh.slice(-32); // Ambil maks 32 frame terakhir
-        framesToUse.forEach((frame, i) => {
-            if (frame.melEnergies) {
-                frame.melEnergies.forEach((val, j) => {
-                    if ((i * 32) + j < 1024) inputVector[(i * 32) + j] = val;
-                });
-            }
-        });
-        const inputTensor = tf.tensor2d([inputVector], [1, 1024]);
-        const prediction = neuralModel.predict(inputTensor);
-        const scores = await prediction.data();
-        inputTensor.dispose();
-        prediction.dispose();
-
-        return Array.from(scores).map((s, i) => ({
-            class: MODEL_CLASSES[i],
-            confidence: Math.round(s * 100)
-        })).sort((a,b) => b.confidence - a.confidence).slice(0, 3);
-    } catch (e) {
-        console.error("Inference Error", e);
-        return null;
-    }
-}
+var CLASSES=["belly_pain","burping","cold_hot","discomfort","hungry","lonely","scared","tired"];
 
 /* ==== AUDIO ENGINE ==== */
 function estimateF0(td,sr){var n=td.length,sig=new Float32Array(n);for(var i=0;i<n;i++)sig[i]=(td[i]-128)/128;var minL=Math.floor(sr/800),maxL=Math.floor(sr/100),bC=-1,bL=minL;for(var lag=minL;lag<Math.min(maxL,n/2);lag++){var c=0,n1=0,n2=0;for(var j=0;j<n-lag;j++){c+=sig[j]*sig[j+lag];n1+=sig[j]*sig[j];n2+=sig[j+lag]*sig[j+lag];}var nf=Math.sqrt(n1*n2);if(nf>0)c/=nf;if(c>bC){bC=c;bL=lag;}}return{f0:bC>0.3?Math.round(sr/bL):0,conf:bC};}
@@ -130,35 +89,42 @@ if(it.peakPos<0.25)sc.scared+=25;if(p.meanF0>500)sc.scared+=15;if(it.maxAmp>50)s
 if(it.trend==="flat")sc.cold_hot+=20;if(rh.score>0.3&&rh.score<0.6)sc.cold_hot+=15;if(p.f0CV<0.15)sc.cold_hot+=15;
 var mx=Math.max.apply(null,Object.values(sc))||1;return Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return{class:e[0],confidence:Math.round(e[1]/mx*100)};});}
 
-function classify(fh){return new Promise(async function(resolve,reject){
-if(fh.length<5){reject(new Error("Data tidak cukup"));return;}
-var ag=aggregate(fh);if(!ag){reject(new Error("Gagal"));return;}
+function classify(fh, tfModel){return new Promise(function(resolve,reject){if(fh.length<5){reject(new Error("Data tidak cukup"));return;}var ag=aggregate(fh);if(!ag){reject(new Error("Gagal"));return;}
+var rb=ruleClassify(ag);
 
-// Coba gunakan Neural Network dulu
-var rb = await getNeuralPredictions(fh);
-var isFallback = false;
-// Jika gagal, gunakan rule-based lama
-if (!rb) {
-    rb = ruleClassify(ag);
-    isFallback = true;
+// Integrasi TFJS Deep Learning (1024 input features)
+var dlPreds = null;
+if(tfModel){
+    try{
+        var flat = [];
+        for(var i=0; i<32; i++){
+            if(i < fh.length) { flat.push(...fh[i].melEnergies); } 
+            else { for(var j=0; j<32; j++) flat.push(0); } // Pad with zeros to 1024
+        }
+        if(flat.length > 1024) flat = flat.slice(0, 1024);
+        
+        var inputTensor = tf.tensor2d([flat], [1, 1024]);
+        var out = tfModel.predict(inputTensor);
+        var probs = out.dataSync();
+        var maxIdx = probs.indexOf(Math.max(...probs));
+        var dlClass = CLASSES[maxIdx];
+        
+        dlPreds = {class: dlClass, confidence: Math.round(probs[maxIdx]*100), acoustic_evidence: "Prediksi Deep Learning (TFJS HDF5)"};
+        inputTensor.dispose(); out.dispose();
+        
+        if(dlPreds && dlPreds.confidence > 20){ // Jika TFJS cukup yakin, jadikan prioritas utama
+            var exist = rb.find(function(r){return r.class === dlPreds.class});
+            if(exist) exist.confidence = dlPreds.confidence;
+            else rb.unshift(dlPreds);
+            rb.sort(function(a,b){return b.confidence - a.confidence});
+        }
+    }catch(e){console.warn("TFJS error, fallback to Rule-Based", e);}
 }
 
-if(!window.__GROQ_KEY){
-    var topCls=rb[0]?rb[0].class:"unknown";
-    var dbI=CRY_DB[topCls]||CRY_DB.unknown;
-    resolve({
-        predictions:rb.map(function(r){r.acoustic_evidence=isFallback?"F0="+ag.pitch.meanF0+"Hz, pola "+ag.rhythm.pattern:"Deep Learning Analysis: Terdeteksi pola "+dbI.label;return r;}),
-        analysis:isFallback?"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+".":"Analisis berbasis Neural Network (sequential_11) mendeteksi pola "+dbI.label+" dengan kepastian "+rb[0].confidence+"%.",
-        contextual_advice:dbI.desc+" "+dbI.steps[0].a+": "+dbI.steps[0].d,
-        urgency:ag.pitch.meanF0>550?"high":ag.intensity.meanAmp>30?"medium":"low",
-        _diag:{rb:rb,ag:ag,fallback:isFallback}
-    });
-    return;
-}
-
-var sys='Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil prediksi model (Neural/Rules). Tugas Anda: 1) Evaluasi apakah kelas prediksi cocok dengan fitur akustik. 2) Tulis analisis nyata dalam bahasa Indonesia. 3) Tulis saran praktis nyata dalam bahasa Indonesia. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis nyata","contextual_advice":"tulis saran praktis nyata","urgency":"low|medium|high"} Maksimal 3 prediksi.';
+if(!window.__GROQ_KEY){var topCls=rb[0]?rb[0].class:"unknown";var dbI=CRY_DB[topCls]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence=r.acoustic_evidence||("F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB, pola "+ag.rhythm.pattern);return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbI.desc+" "+dbI.steps[0].a+": "+dbI.steps[0].d+" "+dbI.steps[1].a+": "+dbI.steps[1].d,urgency:ag.pitch.meanF0>550?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});return;}
+var sys='Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil pre-klasifikasi. Tugas Anda: 1) Evaluasi apakah kelas prediksi cocok dengan fitur akustik. 2) Tulis analisis akustik NYATA berdasarkan data (contoh: "Frekuensi dasar terdeteksi pada 283 Hz dengan jitter tinggi 87.8% menunjukkan tangisan tidak stabil, khas pola kelelahan. HNR 5.87 dB menandakan komponen noise signifikan."). 3) Tulis saran NYATA dan spesifik (contoh: "Coba redupkan lampu dan ayun bayi perlahan. Jika sudah lebih dari 1.5 jam sejak tidur terakhir, kemungkinan besar bayi butuh tidur."). JANGAN tulis placeholder seperti "2 kalimat" — tulis konten sesungguhnya. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis akustik nyata dalam bahasa Indonesia","contextual_advice":"tulis saran praktis nyata dalam bahasa Indonesia","urgency":"low|medium|high"} Maksimal 3 prediksi.';
 var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
-fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:"Data akustik teragregasi:\n"+JSON.stringify(ag,null,1)+"\n\nHasil ML/AI Classifier:\n"+JSON.stringify(rb,null,1)+"\n\nBerikan analisis dan saran yang spesifik."}],response_format:{type:"json_object"},temperature:0.4,max_tokens:800}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag,fallback:isFallback};resolve(p);}).catch(function(e){clearTimeout(tid);var topClass=rb[0]?rb[0].class:"unknown";var dbItem=CRY_DB[topClass]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="Analisis sistem: F0="+ag.pitch.meanF0+"Hz";return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+".",contextual_advice:dbItem.desc+" "+dbItem.steps[0].a+": "+dbItem.steps[0].d,urgency:ag.pitch.meanF0>550&&ag.intensity.maxAmp>50?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:isFallback}});});});}
+fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:"Data akustik teragregasi:\n"+JSON.stringify(ag,null,1)+"\n\nHasil pre-klasifikasi (TFJS/Rule-based):\n"+JSON.stringify(rb,null,1)+"\n\nBerikan analisis dan saran yang spesifik berdasarkan data di atas."}],response_format:{type:"json_object"},temperature:0.4,max_tokens:800}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag};resolve(p);}).catch(function(e){clearTimeout(tid);var topClass=rb[0]?rb[0].class:"unknown";var dbItem=CRY_DB[topClass]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="Analisis pre-klasifikasi: F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB";return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbItem.desc+" "+dbItem.steps[0].a+": "+dbItem.steps[0].d,urgency:ag.pitch.meanF0>550&&ag.intensity.maxAmp>50?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});});});}
 
 function Spectrogram(props){var ref=useRef(null);useEffect(function(){if(!ref.current||!props.data.length)return;var c=ref.current,x=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);var W=r.width,H=r.height,n=props.data.length,mb=props.data[0].melEnergies.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;props.data.forEach(function(f){f.melEnergies.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=props.data[f].melEnergies,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle="rgba(10,132,255,"+Math.pow(nm,0.7)*0.8+")";x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[props.data]);
 return html`<div style=${{position:"relative"}}><canvas ref=${ref} style=${{width:"100%",height:100,borderRadius:16,border:"1px solid rgba(0,0,0,0.04)",background:"rgba(255,255,255,0.4)"}}/>${props.rec&&html`<div style=${{position:"absolute",top:8,right:10,background:"#FF453A",borderRadius:20,padding:"4px 12px",fontSize:11,color:"#FFF",fontWeight:700,animation:"blink 1.5s infinite",display:"flex",alignItems:"center",gap:4}}><div style=${{width:6,height:6,borderRadius:3,background:"#FFF"}}/>REC</div>`}</div>`;}
@@ -171,7 +137,7 @@ return html`<div className="gl" style=${{overflow:"hidden",marginTop:6}}><button
 ${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>${[["F0",ag.pitch.meanF0+" Hz"],["Jitter",(ag.vq.jitter*100).toFixed(1)+"%"],["HNR",ag.vq.hnr+" dB"]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>${[["Ritme",(ag.rhythm.score*100).toFixed(0)+"%"],["Pola",ag.rhythm.pattern],["Bout",ag.rhythm.boutCount+"x"],["Intensitas",ag.intensity.trend]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
-${props.diag.fallback&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:12,color:"#FF9F0A",fontWeight:600}}>Fallback: Rule-based (Model .json tidak ditemukan)</div>`}
+${props.diag.fallback&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:12,color:"#FF9F0A",fontWeight:600}}>Fallback: Rule-based (tanpa LLM)</div>`}
 </div>`}</div>`;}
 
 function chatWithAI(question,context){
@@ -190,7 +156,12 @@ var _loading=useState(false),loading=_loading[0],setLoading=_loading[1];
 var _open=useState(false),open=_open[0],setOpen=_open[1];
 var scrollRef=useRef(null);
 
-var quickQs=["Apa ciri khas tangisan lapar vs mengantuk?","Kapan harus ke dokter?","Bagaimana teknik menenangkan yang efektif?","Apakah tangisan ini normal untuk usia bayi?"];
+var quickQs=[
+"Apa ciri khas tangisan lapar vs mengantuk?",
+"Kapan harus ke dokter?",
+"Bagaimana teknik menenangkan yang efektif?",
+"Apakah tangisan ini normal untuk usia bayi?"
+];
 
 function send(q){
 var question=q||inp.trim();if(!question||loading)return;
@@ -259,15 +230,26 @@ return html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",
 
 function App(){
 var _p=useState("idle"),phase=_p[0],setPhase=_p[1],_e=useState(0),elapsed=_e[0],setElapsed=_e[1],_sd=useState([]),specData=_sd[0],setSpecData=_sd[1],_r=useState(null),results=_r[0],setResults=_r[1],_aa=useState(""),aiAn=_aa[0],setAiAn=_aa[1],_av=useState(""),aiAd=_av[0],setAiAd=_av[1],_u=useState("low"),urg=_u[0],setUrg=_u[1],_er=useState(null),err=_er[0],setErr=_er[1],_nk=useState(false),needKey=_nk[0],setNeedKey=_nk[1],_ak=useState(""),akd=_ak[0],setAkd=_ak[1],_dg=useState(null),diag=_dg[0],setDiag=_dg[1];
+var _tf=useState(null),tfModel=_tf[0],setTfModel=_tf[1];
 var msR=useRef(null),acR=useRef(null),anR=useRef(null),fhR=useRef([]),tmR=useRef(null),clR=useRef(null),phR=useRef("idle");
 
-// Saat app berjalan, muat key dan juga model neural
 useEffect(function(){
     var k=localStorage.getItem("groq_key");
     if(k){window.__GROQ_KEY=k;setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}
     
-    // Panggil fungsi pemuatan model di sini
-    loadNeuralModel();
+    // Load TFJS Model
+    if(window.tf){
+        tf.loadLayersModel('./tfjs_model/model.json').then(function(m){
+            setTfModel(m);
+            console.log("TFJS Model loaded successfully!");
+            var el=document.getElementById("loading");if(el)el.style.display="none";
+        }).catch(function(e){
+            console.warn("TFJS Model failed to load. Ensure folder structure is correct. Proceeding with Rule-Based Fallback.", e);
+            var el=document.getElementById("loading");if(el)el.style.display="none";
+        });
+    } else {
+        var el=document.getElementById("loading");if(el)el.style.display="none";
+    }
 },[]);
 
 useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();};},[]);
@@ -276,7 +258,7 @@ function start(){setErr(null);setResults(null);setAiAn("");setAiAd("");setSpecDa
 navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;var src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0.7;src.connect(an);anR.current=an;setPhase("recording");phR.current="recording";setElapsed(0);tmR.current=setInterval(function(){setElapsed(function(e){return e+1;});},1000);clR.current=setInterval(function(){var f=extractFeatures(an,ac.sampleRate);if(f.avgAmplitude>2){fhR.current.push(f);setSpecData(function(p){return p.concat([f]);});}},200);}).catch(function(e){setErr(e.name==="NotAllowedError"?"Izin mikrofon ditolak.":"Error: "+e.message);});}
 
 function stop(){if(phR.current!=="recording")return;phR.current="analyzing";clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();setPhase("analyzing");if(fhR.current.length<5){setErr("Rekam min 3 detik dengan tangisan jelas.");setPhase("idle");phR.current="idle";return;}if(!window.__GROQ_KEY){setNeedKey(true);setPhase("idle");phR.current="idle";return;}
-classify(fhR.current).then(function(r){if(r&&r.predictions){setResults(r.predictions);setAiAn(r.analysis||"");setAiAd(r.contextual_advice||"");setUrg(r.urgency||"low");setDiag(r._diag||null);setPhase("results");phR.current="results";}else{setErr("Gagal.");setPhase("idle");phR.current="idle";}}).catch(function(e){setErr(e.message);setPhase("idle");phR.current="idle";});}
+classify(fhR.current, tfModel).then(function(r){if(r&&r.predictions){setResults(r.predictions);setAiAn(r.analysis||"");setAiAd(r.contextual_advice||"");setUrg(r.urgency||"low");setDiag(r._diag||null);setPhase("results");phR.current="results";}else{setErr("Gagal.");setPhase("idle");phR.current="idle";}}).catch(function(e){setErr(e.message);setPhase("idle");phR.current="idle";});}
 
 function reset(){setPhase("idle");phR.current="idle";setResults(null);setAiAn("");setAiAd("");setSpecData([]);setElapsed(0);setErr(null);setDiag(null);}
 function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
@@ -335,6 +317,5 @@ ${akd&&html`<div style=${{display:"flex",alignItems:"center",gap:6,background:"r
 
 ReactDOM.createRoot(document.getElementById("root")).render(html`<${App}/>`);
 </script>
-
 </body>
 </html>
