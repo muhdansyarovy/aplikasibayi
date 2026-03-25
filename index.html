@@ -90,10 +90,6 @@ function Spectrogram({data,rec}){const ref=useRef(null);useEffect(()=>{if(!ref.c
 
 function Wave({aRef,rec}){const ref=useRef(null),anim=useRef(null);useEffect(()=>{if(!rec||!aRef.current||!ref.current)return;const c=ref.current,x=c.getContext("2d"),an=aRef.current,da=new Uint8Array(an.fftSize);const draw=()=>{anim.current=requestAnimationFrame(draw);an.getByteTimeDomainData(da);const d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);const W=r.width,H=r.height;x.fillStyle="#F5F5F7";x.fillRect(0,0,W,H);x.strokeStyle="rgba(0,0,0,0.04)";x.lineWidth=1;x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.lineWidth=2;const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,"#0A84FF");g.addColorStop(0.5,"#BF5AF2");g.addColorStop(1,"#FF375F");x.strokeStyle=g;x.beginPath();const sw=W/da.length;let px=0;for(let i=0;i<da.length;i++){const v=da[i]/128,y=(v*H)/2;i===0?x.moveTo(px,y):x.lineTo(px,y);px+=sw;}x.stroke();};draw();return()=>cancelAnimationFrame(anim.current);},[rec,aRef]);return <canvas ref={ref} style={{width:"100%",height:50,borderRadius:16,border:"1px solid rgba(0,0,0,0.06)"}}/>;}
 
-// ==========================================
-// INTEGRASI GROQ API 
-// Menggantikan API Anthropic
-// ==========================================
 async function classify(history){
   if(history.length<5) return null;
   const n=history.length,av=(a,k)=>a.reduce((s,f)=>s+f[k],0)/n;
@@ -111,35 +107,25 @@ async function classify(history){
     melProfile:mp.map(v=>+v.toFixed(2)), duration:+(n*0.2).toFixed(1), frames:n
   };
 
-  const sys = `Anda adalah sistem AI penganalisa tangisan bayi. Evaluasi fitur audio yang diberikan. Output HARUS murni JSON dengan struktur berikut:
+  const sys = `Anda adalah sistem AI penganalisa tangisan bayi. Output HARUS murni JSON dengan struktur berikut:
 {"predictions":[{"class":"hungry","confidence":85},{"class":"tired","confidence":10},{"class":"discomfort","confidence":5}],"analysis":"2 kalimat analisis akustik","contextual_advice":"2 kalimat saran medis","urgency":"low|medium|high"}
-Pilihan class HANYA: hungry, belly_pain, burping, discomfort, tired, lonely, scared, cold_hot, unknown. Total confidence harus 100. Jangan ada teks markdown di luar JSON.`;
+Pilihan class HANYA: hungry, belly_pain, burping, discomfort, tired, lonely, scared, cold_hot, unknown.`;
 
   try {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${window.__GROQ_KEY}`
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${window.__GROQ_KEY}` },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Groq Llama-3 (Sangat Cepat)
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: "Data fitur audio:\n" + JSON.stringify(fs, null, 2) }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2
+        model: "llama3-8b-8192", 
+        messages: [{ role: "system", content: sys }, { role: "user", content: "Data fitur:\n" + JSON.stringify(fs, null, 2) }],
+        response_format: { type: "json_object" }, temperature: 0.2
       })
     });
-    
     const d = await r.json();
     if (!r.ok) throw new Error(d.error?.message || "API Error");
-    
     return JSON.parse(d.choices[0].message.content);
   } catch(e) {
-    console.error(e);
-    return null;
+    throw new Error(e.message);
   }
 }
 
@@ -166,28 +152,33 @@ return(<div className="glass" style={{background:top?`linear-gradient(135deg,${d
 
 function Urgency({level}){const c={high:{bg:"rgba(255,69,58,0.08)",br:"rgba(255,69,58,0.15)",cl:"#FF453A",ic:"🚨",tx:"Tinggi — Pertimbangkan konsultasi dokter"},medium:{bg:"rgba(255,159,10,0.07)",br:"rgba(255,159,10,0.12)",cl:"#FF9F0A",ic:"⚡",tx:"Sedang — Pantau respons bayi"},low:{bg:"rgba(48,209,88,0.07)",br:"rgba(48,209,88,0.12)",cl:"#30D158",ic:"✅",tx:"Rendah — Tangisan normal"}}[level];if(!c)return null;return <div className="glass" style={{background:c.bg,border:"1px solid "+c.br,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>{c.ic}</span><div><div style={{fontFamily:"'SF Mono',monospace",fontSize:10,color:c.cl,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px"}}>Urgensi</div><div style={{fontSize:13,marginTop:1}}>{c.tx}</div></div></div>;}
 
+// MODAL UNTUK MENGISI API KEY DENGAN AMAN
+function ApiKeyModal({onSave}){const[key,setKey]=useState("");return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20}}><div className="glass" style={{padding:28,maxWidth:380,width:"100%"}}><div style={{fontSize:32,textAlign:"center",marginBottom:12}}>🔑</div><h2 style={{fontSize:20,fontWeight:600,textAlign:"center",marginBottom:6}}>API Key Required</h2><p style={{fontSize:13,color:"#86868B",textAlign:"center",marginBottom:18}}>Masukkan API Key Groq Anda yang baru. Kunci akan disimpan aman di HP Anda.</p><input type="password" value={key} onChange={e=>setKey(e.target.value)} placeholder="gsk_..." style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid rgba(0,0,0,0.08)",fontSize:14,background:"rgba(0,0,0,0.02)",outline:"none",marginBottom:14}}/><button onClick={()=>{if(key.startsWith("gsk_")){window.__GROQ_KEY=key;try{localStorage.setItem("groq_key",key)}catch(e){}onSave();}}} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:"#0A84FF",color:"#FFF",fontSize:16,fontWeight:600,cursor:key.startsWith("gsk_")?"pointer":"not-allowed",opacity:key.startsWith("gsk_")?1:0.4}}>Simpan & Mulai</button></div></div>);}
+
 function App(){
-const[phase,setPhase]=useState("idle");const[elapsed,setElapsed]=useState(0);const[specData,setSpecData]=useState([]);const[results,setResults]=useState(null);const[aiAnalysis,setAiAnalysis]=useState("");const[aiAdvice,setAiAdvice]=useState("");const[urgency,setUrgency]=useState("low");const[error,setError]=useState(null);
+const[phase,setPhase]=useState("idle");const[elapsed,setElapsed]=useState(0);const[specData,setSpecData]=useState([]);const[results,setResults]=useState(null);const[aiAnalysis,setAiAnalysis]=useState("");const[aiAdvice,setAiAdvice]=useState("");const[urgency,setUrgency]=useState("low");const[error,setError]=useState(null);const[needKey,setNeedKey]=useState(false);
 
 const msRef=useRef(null),acRef=useRef(null),anRef=useRef(null),fhRef=useRef([]),tmRef=useRef(null),clRef=useRef(null);
 
 useEffect(()=>{
-  // Menetapkan kunci API Groq Anda secara langsung
-  window.__GROQ_KEY = "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";
+  const savedKey = localStorage.getItem("groq_key");
+  if(savedKey) { window.__GROQ_KEY = savedKey; }
 },[]);
 
-const start=useCallback(async()=>{try{setError(null);setResults(null);setAiAnalysis("");setAiAdvice("");setSpecData([]);fhRef.current=[];const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});msRef.current=s;const ac=new(window.AudioContext||window.webkitAudioContext)();acRef.current=ac;const src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0.8;src.connect(an);anRef.current=an;setPhase("recording");setElapsed(0);tmRef.current=setInterval(()=>setElapsed(e=>e+1),1000);clRef.current=setInterval(()=>{const f=extractFeatures(an,ac.sampleRate);if(f.avgAmplitude>3){fhRef.current.push(f);setSpecData(p=>[...p,f]);}},200);}catch(e){setError(e.name==="NotAllowedError"?"Izin mikrofon ditolak. Buka Pengaturan > Safari > Mikrofon dan izinkan.":"Error: "+e.message);}
+const start=useCallback(async()=>{try{setError(null);setResults(null);setAiAnalysis("");setAiAdvice("");setSpecData([]);fhRef.current=[];const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});msRef.current=s;const ac=new(window.AudioContext||window.webkitAudioContext)();acRef.current=ac;const src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0.8;src.connect(an);anRef.current=an;setPhase("recording");setElapsed(0);tmRef.current=setInterval(()=>setElapsed(e=>e+1),1000);clRef.current=setInterval(()=>{const f=extractFeatures(an,ac.sampleRate);if(f.avgAmplitude>3){fhRef.current.push(f);setSpecData(p=>[...p,f]);}},200);}catch(e){setError(e.name==="NotAllowedError"?"Izin mikrofon ditolak. Buka Pengaturan iPhone > Safari > Mikrofon, ubah ke 'Izinkan'.":"Error: "+e.message);}
 },[]);
 
 const stop=useCallback(async()=>{clearInterval(tmRef.current);clearInterval(clRef.current);msRef.current?.getTracks().forEach(t=>t.stop());acRef.current?.close();setPhase("analyzing");if(fhRef.current.length<5){setError("Data tidak cukup. Rekam minimal 3 detik dengan tangisan jelas.");setPhase("idle");return;}
-if(!window.__GROQ_KEY){setError("API Key Groq belum diatur.");setPhase("idle");return;}
-try{const r=await classify(fhRef.current);if(r?.predictions){setResults(r.predictions);setAiAnalysis(r.analysis||"");setAiAdvice(r.contextual_advice||"");setUrgency(r.urgency||"low");setPhase("results");}else{setError("Gagal menganalisis. Periksa API key dan coba lagi.");setPhase("idle");}}catch(e){setError("Error: "+e.message);setPhase("idle");}
+if(!window.__GROQ_KEY){setNeedKey(true);setPhase("idle");return;}
+try{const r=await classify(fhRef.current);if(r?.predictions){setResults(r.predictions);setAiAnalysis(r.analysis||"");setAiAdvice(r.contextual_advice||"");setUrgency(r.urgency||"low");setPhase("results");}else{setError("Gagal menganalisis. Periksa API key dan coba lagi.");setPhase("idle");}}catch(e){setError("Gagal: " + e.message + " (Pastikan API Key Groq Anda valid dan aktif)");setPhase("idle");}
 },[]);
 
 const reset=()=>{setPhase("idle");setResults(null);setAiAnalysis("");setAiAdvice("");setSpecData([]);setElapsed(0);setError(null);};
 const fmt=s=>`${Math.floor(s/60).toString().padStart(2,"0")}:${(s%60).toString().padStart(2,"0")}`;
 
 return(<div>
+{needKey&&<ApiKeyModal onSave={()=>setNeedKey(false)}/>}
+
 <div style={{textAlign:"center",padding:"48px 24px 20px",animation:"fadeIn 0.8s"}}>
 <div className="pill" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(10,132,255,0.08)",border:"1px solid rgba(10,132,255,0.12)",padding:"5px 16px",marginBottom:16}}><div style={{width:6,height:6,borderRadius:"50%",background:"#0A84FF"}}/><span style={{fontFamily:"'SF Mono',monospace",fontSize:11,fontWeight:600,color:"#0A84FF",letterSpacing:"0.5px"}}>DeepInfant x Groq</span></div>
 <h1 style={{fontWeight:700,fontSize:34,margin:0,letterSpacing:"-1px",lineHeight:1.1}}>Baby Cry<br/>Translator</h1>
@@ -235,6 +226,7 @@ return(<div>
 </div></div>
 <div className="glass" style={{padding:18,marginTop:10}}><div style={{fontWeight:600,fontSize:14,marginBottom:10}}>Spesifikasi Model</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 20px"}}>{[["Arsitektur","CNN-LSTM"],["Processing Unit","Groq LPU"],["LLM Model","Llama-3 8B"],["Mel Bands","128"],["Kelas","9"],["Kecepatan","~800ms"]].map(([k,v],i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}><span style={{fontSize:13,color:"#AEAEB2"}}>{k}</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:13,fontWeight:500}}>{v}</span></div>))}</div></div>
 <p style={{textAlign:"center",marginTop:16,fontSize:12,color:"#C7C7CC"}}>Powered by Groq Cloud API</p>
+<button onClick={()=>setNeedKey(true)} style={{display:"block",margin:"12px auto 0",background:"none",border:"1px solid rgba(0,0,0,0.06)",borderRadius:10,padding:"8px 20px",fontSize:12,color:"#86868B",cursor:"pointer"}}>🔑 Atur Ulang API Key</button>
 </div>)}
 </div></div>);}
 
