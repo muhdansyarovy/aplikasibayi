@@ -1,316 +1,244 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BabyCry Translator x Groq</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Baby Cry Translator — DeepInfant x Groq</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='28' font-size='28'>👶</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;background:linear-gradient(180deg,#FBFBFE 0%,#F2F2F7 30%,#E8ECF4 60%,#F2F2F7 100%);color:#1D1D1F;-webkit-font-smoothing:antialiased}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(10,132,255,0.15)}50%{transform:scale(1.04);box-shadow:0 0 0 20px rgba(10,132,255,0)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.glass{background:rgba(255,255,255,0.72);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,0.5);border-radius:20px;box-shadow:0 2px 20px rgba(0,0,0,0.04),0 0 0 0.5px rgba(0,0,0,0.03)}
+.glass-inner{background:rgba(255,255,255,0.5);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);border-radius:14px}
+.pill{-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:100px}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+canvas{display:block}
+.seg-btn{flex:1;padding:8px 0;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;transition:all 0.25s ease}
+.seg-btn.active{font-weight:600;color:#1D1D1F;background:rgba(255,255,255,0.9);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.seg-btn:not(.active){font-weight:400;color:#86868B;background:transparent}
+.step-card{display:flex;gap:12px;padding:12px;border-radius:14px}
+.warn-item{display:flex;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,69,58,0.03);border:1px solid rgba(255,69,58,0.06)}
+</style>
 </head>
-<body class="bg-[#F2F4F7]">
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useRef,useCallback,useEffect}=React;
+
+const CRY_DB={
+hungry:{id:"hungry",label:"Lapar",labelEn:"Hungry",icon:"🍼",color:"#FF9F0A",colorLight:"#FFF4E0",
+description:"Tangisan ritmis dan berulang dengan pola rooting. Intensitas meningkat jika tidak segera ditangani.",
+steps:[{n:1,action:"Periksa waktu makan terakhir",detail:"Bayi baru lahir makan setiap 2-3 jam. Jika sudah lebih, kemungkinan besar lapar.",icon:"🕐"},{n:2,action:"Perhatikan tanda lapar awal",detail:"Mengisap jari/tangan, membuka-tutup mulut, menjulurkan lidah, gerakan kepala mencari.",icon:"👄"},{n:3,action:"Berikan ASI atau susu formula",detail:"Posisikan bayi nyaman, pastikan pelekatan (latch) benar. Jangan tunggu tangisan memuncak.",icon:"🤱"},{n:4,action:"Sendawakan setelah menyusu",detail:"Tegakkan bayi 15-20 menit setelah menyusu, tepuk punggung lembut.",icon:"💨"}],
+warnings:["Bayi menolak makan berulang kali lebih dari 8 jam","Berat badan terus menurun atau tidak naik sesuai kurva","Muntah proyektil setiap selesai minum","Tanda dehidrasi: popok kering >6 jam, ubun-ubun cekung"],
+visualTips:[{title:"Posisi Cradle Hold",desc:"Kepala bayi di lekukan siku, badan menghadap ibu, perut bertemu perut."},{title:"Posisi Cross-Cradle",desc:"Tangan berlawanan menopang kepala, kontrol pelekatan lebih baik untuk newborn."}]},
+belly_pain:{id:"belly_pain",label:"Sakit Perut",labelEn:"Belly Pain",icon:"😣",color:"#FF453A",colorLight:"#FFE5E3",
+description:"Tangisan bernada tinggi dan intens, kaki ditarik ke perut. Sering disertai perut kembung.",
+steps:[{n:1,action:"Lakukan pijatan I-L-U",detail:"Pijat perut membentuk I (sisi kiri), L (melintang), U (terbalik). Gunakan minyak telon.",icon:"✋"},{n:2,action:"Posisi Airplane Hold",detail:"Tengkurapkan bayi di lengan bawah, kepala dekat siku, tangan menopang perut.",icon:"✈️"},{n:3,action:"Gerakan sepeda",detail:"Pegang kedua kaki dan gerakkan seperti mengayuh sepeda perlahan.",icon:"🚲"},{n:4,action:"Kompres hangat",detail:"Handuk hangat di perut 5-10 menit. Tes suhu di pergelangan tangan dulu.",icon:"🌡️"}],
+warnings:["Perut keras dan kembung disertai muntah hijau/kuning","Darah dalam tinja atau tinja hitam","Tangisan intens >3 jam tanpa henti","Bayi lemas, pucat, atau demam >38°C"],
+visualTips:[{title:"Pijat I-L-U",desc:"Membentuk I di sisi kiri, L melintang, U terbalik — searah usus besar."},{title:"Airplane Hold",desc:"Bayi tengkurap di lengan, tekanan lembut perut membantu gas keluar."}]},
+burping:{id:"burping",label:"Perlu Bersendawa",labelEn:"Needs Burping",icon:"💨",color:"#30D158",colorLight:"#E3F9E8",
+description:"Tangisan pendek terputus-putus dengan suara grunting, biasanya saat/setelah menyusu.",
+steps:[{n:1,action:"Posisi tegak di bahu",detail:"Sandarkan bayi di bahu, topang kepala. Tepuk punggung dari bawah ke atas.",icon:"🤱"},{n:2,action:"Posisi duduk di pangkuan",detail:"Topang dada dan dagu satu tangan, tepuk punggung dengan tangan lain.",icon:"🪑"},{n:3,action:"Posisi tengkurap di pangkuan",detail:"Kepala sedikit lebih tinggi. Usap punggung dari bawah ke atas.",icon:"👐"},{n:4,action:"Tunggu dengan sabar",detail:"Jika belum 2-3 menit, ubah posisi dan coba lagi.",icon:"⏳"}],
+warnings:["Gumoh berlebihan (>2 sendok makan) setiap menyusu","Kesakitan saat bersendawa","Rewel berkepanjangan meski sudah dicoba"],
+visualTips:[{title:"Over-the-Shoulder",desc:"Bayi tegak di bahu, tepuk ritmis dari bawah ke atas. Lindungi bahu dengan kain."},{title:"Sitting Up",desc:"Satu tangan topang dagu & dada, tangan lain tepuk/usap punggung."}]},
+discomfort:{id:"discomfort",label:"Tidak Nyaman",labelEn:"Discomfort",icon:"😖",color:"#FF9F0A",colorLight:"#FFF4E0",
+description:"Tangisan berselang yang berubah saat posisi berganti — popok, pakaian, atau posisi.",
+steps:[{n:1,action:"Periksa popok",detail:"Ganti segera jika basah/kotor. Bersihkan dan oleskan krim barrier.",icon:"🧷"},{n:2,action:"Periksa pakaian & jari",detail:"Tidak ketat? Cek hair tourniquet di jari!",icon:"👕"},{n:3,action:"Ubah posisi",detail:"Coba telentang, miring, atau tegak.",icon:"🔄"},{n:4,action:"Periksa lingkungan",detail:"Suara keras? Cahaya terang? Kurangi stimulasi.",icon:"🏠"}],
+warnings:["Ruam popok melepuh >3 hari","Bengkak/kemerahan di area tertentu","Menangis saat disentuh area spesifik"],
+visualTips:[{title:"Ganti Popok",desc:"Bersihkan depan ke belakang, keringkan sempurna, oleskan krim barrier."},{title:"Cek Hair Tourniquet",desc:"Periksa SEMUA jari tangan, kaki, genital — rambut bisa melilit!"}]},
+tired:{id:"tired",label:"Mengantuk",labelEn:"Tired",icon:"😴",color:"#BF5AF2",colorLight:"#F3E8FF",
+description:"Tangisan merengek lemah, mengucek mata, menguap, memalingkan wajah.",
+steps:[{n:1,action:"Kenali wake window",detail:"0-3 bln: 45-90 mnt · 3-6 bln: 1.5-2.5 jam · 6-9 bln: 2-3 jam.",icon:"⏰"},{n:2,action:"Ciptakan lingkungan tidur",detail:"Redupkan lampu, kurangi stimulasi, white noise volume rendah.",icon:"🌙"},{n:3,action:"Rutinitas tidur",detail:"Bedong (<3 bln), ayun perlahan, lagu tidur.",icon:"🎵"},{n:4,action:"Letakkan saat drowsy",detail:"Saat mengantuk tapi belum tidur penuh. Tepuk ritmis jika perlu.",icon:"🛏️"}],
+warnings:["Tidur >18 jam/hari dan sulit dibangunkan","Pola tidur berubah drastis","Napas tidak teratur saat tidur"],
+visualTips:[{title:"Teknik Bedong",desc:"Rapat tapi tidak ketat di dada. Pinggul bebas. Stop saat bisa berguling."},{title:"Posisi Tidur Aman",desc:"SELALU telentang, permukaan keras, tanpa bantal/selimut/boneka."}]},
+lonely:{id:"lonely",label:"Butuh Perhatian",labelEn:"Lonely",icon:"🤗",color:"#0A84FF",colorLight:"#E0F0FF",
+description:"Tangisan rendah yang berhenti saat digendong atau mendapat perhatian.",
+steps:[{n:1,action:"Skin-to-skin",detail:"Dekapkan bayi di dada (hanya popok). Biarkan rasakan detak jantung.",icon:"💕"},{n:2,action:"Ajak berkomunikasi",detail:"Tatap mata, bicara lembut, tirukan ekspresi.",icon:"👀"},{n:3,action:"Gunakan carrier",detail:"Baby carrier agar bayi dekat, tangan tetap bebas.",icon:"👶"},{n:4,action:"Stimulasi sesuai usia",detail:"Mainan kontras, musik lembut, jalan-jalan.",icon:"🎠"}],
+warnings:["Tidak merespons interaksi sosial >2 bulan","Terus menangis meski digendong penuh perhatian"],
+visualTips:[{title:"Skin-to-Skin",desc:"Bayi hanya popok di dada — mengatur suhu, detak jantung, bonding."},{title:"Gendongan Kangaroo",desc:"Menghadap dada, kepala di bawah dagu. Paling aman dan menenangkan."}]},
+scared:{id:"scared",label:"Kaget/Takut",labelEn:"Scared",icon:"😨",color:"#FF375F",colorLight:"#FFE5EA",
+description:"Tangisan tajam mendadak dengan respons Moro.",
+steps:[{n:1,action:"Suara 'Shhhh'",detail:"Dekat telinga, lebih keras dari tangisan, pelankan bertahap.",icon:"🤫"},{n:2,action:"Bedong (<3 bulan)",detail:"Mengurangi refleks Moro. Pas tapi tidak ketat.",icon:"🧸"},{n:3,action:"Hindari pemicu",detail:"Suara keras, gerakan tiba-tiba, cahaya mendadak.",icon:"🔇"},{n:4,action:"Peluk & goyang ritmis",detail:"Peluk erat, goyang kecil ritmis. Repetitif menenangkan.",icon:"💫"}],
+warnings:["Refleks Moro masih dominan >5-6 bulan","Ketakutan berulang tanpa pemicu","Kejang atau gerakan abnormal"],
+visualTips:[{title:"Teknik 5S",desc:"Swaddle → Side → Shush → Swing → Suck. Efektif <3 bulan."},{title:"Shushing Efektif",desc:"Kontinu dekat telinga. Lebih keras dari tangisan, turunkan perlahan."}]},
+cold_hot:{id:"cold_hot",label:"Suhu Tidak Nyaman",labelEn:"Cold/Hot",icon:"🌡️",color:"#5AC8FA",colorLight:"#E0F5FF",
+description:"Tangisan terus-menerus disertai tanda ketidaknyamanan suhu.",
+steps:[{n:1,action:"Cek suhu tubuh",detail:"Sentuh dada/punggung — bukan tangan/kaki.",icon:"🌡️"},{n:2,action:"Sesuaikan pakaian",detail:"Bayi = orang dewasa + 1 lapisan.",icon:"👕"},{n:3,action:"Atur suhu ruangan",detail:"Ideal: 20-22°C. Hindari AC langsung.",icon:"🏠"},{n:4,action:"Periksa tanda",detail:"Panas: merah, keringat. Dingin: pucat, bersin.",icon:"🔍"}],
+warnings:["Suhu >38°C atau <36°C pada <3 bulan","Letargis atau sulit dibangunkan","Kulit kebiruan di bibir/jari"],
+visualTips:[{title:"Cek Suhu Bayi",desc:"Raba dada/punggung — BUKAN tangan/kaki."},{title:"Aturan Lapisan",desc:"Dewasa + 1 lapis. Overheating LEBIH BAHAYA (terkait SIDS)."}]},
+unknown:{id:"unknown",label:"Tidak Diketahui",labelEn:"Unknown",icon:"❓",color:"#8E8E93",colorLight:"#F2F2F7",
+description:"Pola tidak cocok kategori. Lakukan pemeriksaan menyeluruh.",
+steps:[{n:1,action:"Checklist kebutuhan dasar",detail:"Lapar? Popok? Lelah? Suhu? Satu per satu.",icon:"📋"},{n:2,action:"Periksa fisik",detail:"Jari, ruam, bengkak, telinga, gusi.",icon:"🔍"},{n:3,action:"Teknik menenangkan",detail:"Skin-to-skin, 5S, white noise.",icon:"💆"},{n:4,action:"Catat & konsultasi",detail:"Kapan, berapa lama — berguna untuk dokter.",icon:"📝"}],
+warnings:["Tangisan >3 jam semua kebutuhan dipenuhi","Kesakitan hebat, kaku/lemas abnormal","Demam, muntah, diare menyertai","Insting mengatakan salah — PERCAYA"],
+visualTips:[{title:"Checklist Sistematis",desc:"Popok → Lapar → Suhu → Posisi → Gas → Sakit?"},{title:"Kapan ke Dokter",desc:"Tangisan >3 jam, demam, muntah, lemas — atau insting ortu."}]}
+};
+
+function extractFeatures(an,sr){const fbc=an.frequencyBinCount,fd=new Uint8Array(fbc),td=new Uint8Array(an.fftSize);an.getByteFrequencyData(fd);an.getByteTimeDomainData(td);const mb=32,me=new Float32Array(mb),mf=sr/2;for(let m=0;m<mb;m++){const mL=2595*Math.log10(1+((m/mb)*mf)/700),mH=2595*Math.log10(1+(((m+1)/mb)*mf)/700),bL=Math.floor((700*(Math.pow(10,mL/2595)-1)/mf)*fbc),bH=Math.min(Math.ceil((700*(Math.pow(10,mH/2595)-1)/mf)*fbc),fbc-1);let e=0,c=0;for(let b=bL;b<=bH;b++){e+=fd[b];c++;}me[m]=c>0?Math.log(e/c+1e-8):0;}let mxA=0,tA=0,zc=0;for(let i=0;i<td.length;i++){const a=Math.abs(td[i]-128);if(a>mxA)mxA=a;tA+=a;if(i>0&&((td[i]>=128)!==(td[i-1]>=128)))zc++;}let sc=0,tfe=0;for(let i=0;i<fbc;i++){sc+=i*fd[i];tfe+=fd[i];}sc=tfe>0?(sc/tfe)*(sr/2/fbc):0;let ce=0,ro=0;for(let i=0;i<fbc;i++){ce+=fd[i];if(ce>=tfe*0.85){ro=(i/fbc)*(sr/2);break;}}const bw=sr/(2*fbc);let lb=0,mmb=0,hb=0,vb=0;for(let i=0;i<fbc;i++){const f=i*bw;if(f<300)lb+=fd[i];else if(f<800)mmb+=fd[i];else if(f<2000)hb+=fd[i];else vb+=fd[i];}return{melEnergies:Array.from(me),avgAmplitude:tA/td.length,maxAmplitude:mxA,zeroCrossingRate:zc/td.length,spectralCentroid:sc,spectralRolloff:ro,totalEnergy:tfe,lowBand:lb,midBand:mmb,highBand:hb,vhighBand:vb,timestamp:Date.now()};}
+
+function Spectrogram({data,rec}){const ref=useRef(null);useEffect(()=>{if(!ref.current||!data.length)return;const c=ref.current,x=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);const W=r.width,H=r.height;x.fillStyle="#F5F5F7";x.fillRect(0,0,W,H);const n=data.length,mb=data[0]?.melEnergies?.length||32;let mn=Infinity,mx=-Infinity;for(const f of data)for(const v of f.melEnergies){if(v<mn)mn=v;if(v>mx)mx=v;}const rg=mx-mn||1;for(let f=0;f<n;f++){const px=(f/n)*W,ml=data[f].melEnergies,bh=H/mb,cw=Math.max(2,W/n);for(let m=0;m<mb;m++){const nm=(ml[m]-mn)/rg,it=Math.pow(nm,0.65);x.fillStyle=`rgb(${Math.floor(30+it*80)},${Math.floor(100+it*60)},${Math.floor(180+it*75)})`;x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[data]);return(<div style={{position:"relative"}}><canvas ref={ref} style={{width:"100%",height:100,borderRadius:16,border:"1px solid rgba(0,0,0,0.06)"}}/>{rec&&<div style={{position:"absolute",top:8,right:10,background:"#FF453A",borderRadius:20,padding:"3px 10px",fontSize:11,color:"#FFF",fontFamily:"'SF Mono',monospace",fontWeight:600,animation:"blink 1s infinite",boxShadow:"0 2px 8px rgba(255,69,58,0.3)"}}>● REC</div>}</div>);}
+
+function Wave({aRef,rec}){const ref=useRef(null),anim=useRef(null);useEffect(()=>{if(!rec||!aRef.current||!ref.current)return;const c=ref.current,x=c.getContext("2d"),an=aRef.current,da=new Uint8Array(an.fftSize);const draw=()=>{anim.current=requestAnimationFrame(draw);an.getByteTimeDomainData(da);const d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);const W=r.width,H=r.height;x.fillStyle="#F5F5F7";x.fillRect(0,0,W,H);x.strokeStyle="rgba(0,0,0,0.04)";x.lineWidth=1;x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.lineWidth=2;const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,"#0A84FF");g.addColorStop(0.5,"#BF5AF2");g.addColorStop(1,"#FF375F");x.strokeStyle=g;x.beginPath();const sw=W/da.length;let px=0;for(let i=0;i<da.length;i++){const v=da[i]/128,y=(v*H)/2;i===0?x.moveTo(px,y):x.lineTo(px,y);px+=sw;}x.stroke();};draw();return()=>cancelAnimationFrame(anim.current);},[rec,aRef]);return <canvas ref={ref} style={{width:"100%",height:50,borderRadius:16,border:"1px solid rgba(0,0,0,0.06)"}}/>;}
+
+// ==========================================
+// INTEGRASI GROQ API 
+// Menggantikan API Anthropic
+// ==========================================
+async function classify(history){
+  if(history.length<5) return null;
+  const n=history.length,av=(a,k)=>a.reduce((s,f)=>s+f[k],0)/n;
+  const aa=av(history,"avgAmplitude"),ma=Math.max(...history.map(f=>f.maxAmplitude));
+  const h1=history.slice(0,Math.floor(n/2)),h2=history.slice(Math.floor(n/2)),at=av(h2,"avgAmplitude")-av(h1,"avgAmplitude");
+  const vr=history.reduce((s,f)=>s+Math.pow(f.avgAmplitude-aa,2),0)/n;
+  const mb=history[0].melEnergies.length,mp=new Array(mb).fill(0);
+  for(const f of history) for(let m=0;m<mb;m++) mp[m]+=f.melEnergies[m]/n;
+  
+  const fs={
+    avgAmplitude:+aa.toFixed(2), maxAmplitude:+ma.toFixed(2), amplitudeTrend:at>2?"rising":at<-2?"falling":"stable",
+    amplitudeVariance:+vr.toFixed(2), zeroCrossingRate:+av(history,"zeroCrossingRate").toFixed(4),
+    spectralCentroid:+av(history,"spectralCentroid").toFixed(1), spectralRolloff:+av(history,"spectralRolloff").toFixed(1),
+    bandEnergies:{low:+av(history,"lowBand").toFixed(1),mid:+av(history,"midBand").toFixed(1),high:+av(history,"highBand").toFixed(1),vhigh:+av(history,"vhighBand").toFixed(1)},
+    melProfile:mp.map(v=>+v.toFixed(2)), duration:+(n*0.2).toFixed(1), frames:n
+  };
+
+  const sys = `Anda adalah sistem AI penganalisa tangisan bayi. Evaluasi fitur audio yang diberikan. Output HARUS murni JSON dengan struktur berikut:
+{"predictions":[{"class":"hungry","confidence":85},{"class":"tired","confidence":10},{"class":"discomfort","confidence":5}],"analysis":"2 kalimat analisis akustik","contextual_advice":"2 kalimat saran medis","urgency":"low|medium|high"}
+Pilihan class HANYA: hungry, belly_pain, burping, discomfort, tired, lonely, scared, cold_hot, unknown. Total confidence harus 100. Jangan ada teks markdown di luar JSON.`;
+
+  try {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${window.__GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama3-8b-8192", // Groq Llama-3 (Sangat Cepat)
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: "Data fitur audio:\n" + JSON.stringify(fs, null, 2) }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2
+      })
+    });
     
-    <div id="root">
-        <div style="display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; font-family:sans-serif; color:#64748b;">
-            <div style="font-size: 3rem; margin-bottom: 1rem; animation: bounce 1s infinite;">🤖</div>
-            <p>Memuat Aplikasi AI...</p>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Pastikan perangkat Anda terhubung ke internet.</p>
-        </div>
-    </div>
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error?.message || "API Error");
+    
+    return JSON.parse(d.choices[0].message.content);
+  } catch(e) {
+    console.error(e);
+    return null;
+  }
+}
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+function ResultCard({pred,rank}){const db=CRY_DB[pred.class]||CRY_DB.unknown;const top=rank===0;const[open,setOpen]=useState(top);const[tab,setTab]=useState("steps");
+return(<div className="glass" style={{background:top?`linear-gradient(135deg,${db.colorLight}CC,rgba(255,255,255,0.8))`:"rgba(255,255,255,0.65)",animation:`slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) ${rank*0.1}s both`,overflow:"hidden"}}>
+<div onClick={()=>setOpen(!open)} style={{padding:"16px 18px",cursor:"pointer"}}>
+<div style={{display:"flex",alignItems:"center",gap:12}}>
+<div style={{width:top?48:40,height:top?48:40,borderRadius:top?16:12,background:db.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:top?26:20}}>{db.icon}</div>
+<div style={{flex:1}}><div style={{fontWeight:600,fontSize:top?17:15,color:"#1D1D1F",letterSpacing:"-0.3px"}}>{db.label}</div><div style={{fontSize:12,color:"#86868B",marginTop:1}}>{db.labelEn}</div></div>
+<div className="pill" style={{background:db.color+"12",padding:"6px 16px",border:"1px solid "+db.color+"25"}}><span style={{fontFamily:"'SF Mono',monospace",fontWeight:700,fontSize:top?20:16,color:db.color}}>{pred.confidence}</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:11,color:db.color+"90"}}>%</span></div>
+</div>
+<div style={{marginTop:12,height:4,borderRadius:2,background:"rgba(0,0,0,0.04)",overflow:"hidden"}}><div style={{width:pred.confidence+"%",height:"100%",background:`linear-gradient(90deg,${db.color},${db.color}AA)`,borderRadius:2,transition:"width 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}/></div>
+</div>
+{open&&(<div style={{padding:"0 18px 18px",animation:"fadeIn 0.3s ease"}}>
+<p style={{fontSize:14,color:"#6E6E73",lineHeight:1.55,margin:"0 0 14px"}}>{db.description}</p>
+<div style={{display:"flex",background:"rgba(0,0,0,0.04)",borderRadius:10,padding:2,marginBottom:14}}>
+{["steps","visual","warning"].map(t=>(<button key={t} className={"seg-btn"+(tab===t?" active":"")} onClick={e=>{e.stopPropagation();setTab(t);}}>{t==="steps"?"Langkah":t==="visual"?"Visual":"Peringatan"}</button>))}
+</div>
+{tab==="steps"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>{db.steps.map((s,i)=>(<div key={i} className="step-card glass-inner"><div style={{width:36,height:36,borderRadius:10,background:db.color+"10",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.icon}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}><span style={{fontFamily:"'SF Mono',monospace",fontSize:10,color:"#FFF",fontWeight:700,background:db.color,padding:"1px 7px",borderRadius:6}}>{s.n}</span><span style={{fontWeight:600,fontSize:14}}>{s.action}</span></div><p style={{fontSize:13,color:"#6E6E73",lineHeight:1.5,margin:0}}>{s.detail}</p></div></div>))}</div>}
+{tab==="visual"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>{db.visualTips.map((vt,i)=>(<div key={i} className="glass-inner" style={{padding:14}}><div style={{fontWeight:600,fontSize:14,marginBottom:8}}>{vt.title}</div><div style={{background:`linear-gradient(135deg,${db.colorLight},${db.color}08)`,borderRadius:12,padding:20,marginBottom:10,border:"1px solid "+db.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="100" height="50" viewBox="0 0 100 50" fill="none"><circle cx="35" cy="22" r="12" fill={db.color+"20"} stroke={db.color} strokeWidth="1.5"/><circle cx="33" cy="20" r="1.5" fill={db.color}/><path d="M32 25 Q34 27 36 25" stroke={db.color} strokeWidth="1" fill="none"/><path d="M28 30 Q40 42 65 35" stroke={db.color} strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M15 38 C15 28 22 25 30 28" stroke={db.color+"60"} strokeWidth="3" fill="none" strokeLinecap="round"/><path d="M85 38 C85 28 78 25 70 28" stroke={db.color+"60"} strokeWidth="3" fill="none" strokeLinecap="round"/></svg></div><p style={{fontSize:13,color:"#6E6E73",lineHeight:1.5,margin:0}}>{vt.desc}</p></div>))}</div>}
+{tab==="warning"&&<div><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"10px 12px",borderRadius:12,background:"rgba(255,69,58,0.06)",border:"1px solid rgba(255,69,58,0.1)"}}><span style={{fontSize:16}}>🏥</span><span style={{fontWeight:600,fontSize:14,color:"#FF453A"}}>Segera ke Dokter Jika</span></div><div style={{display:"flex",flexDirection:"column",gap:6}}>{db.warnings.map((w,i)=>(<div key={i} className="warn-item"><div style={{width:22,height:22,borderRadius:"50%",background:"rgba(255,69,58,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#FF453A",fontFamily:"'SF Mono',monospace",fontWeight:700,flexShrink:0}}>{i+1}</div><p style={{fontSize:13,color:"#3A3A3C",lineHeight:1.45,margin:0}}>{w}</p></div>))}</div><div style={{marginTop:10,padding:"10px 12px",borderRadius:12,background:"rgba(255,159,10,0.05)",border:"1px solid rgba(255,159,10,0.1)"}}><p style={{fontSize:12,color:"#6E6E73",margin:0}}>📞 <strong>Darurat:</strong> 119 ext 8 (Kemenkes RI) atau IGD RS terdekat</p></div></div>}
+</div>)}
+</div>);}
 
-        const CRY_CATEGORIES = [
-          { id: 'hunger', label: 'Lapar', sound: 'Neh', color: 'text-blue-600', border: 'border-blue-200', icon: '🍼' },
-          { id: 'sleepy', label: 'Mengantuk', sound: 'Owh', color: 'text-indigo-600', border: 'border-indigo-200', icon: '😴' },
-          { id: 'discomfort', label: 'Tidak Nyaman', sound: 'Heh', color: 'text-amber-600', border: 'border-amber-200', icon: '😖' },
-          { id: 'pain', label: 'Sakit / Nyeri', sound: 'Melengking', color: 'text-red-600', border: 'border-red-200', icon: '⚡' },
-        ];
+function Urgency({level}){const c={high:{bg:"rgba(255,69,58,0.08)",br:"rgba(255,69,58,0.15)",cl:"#FF453A",ic:"🚨",tx:"Tinggi — Pertimbangkan konsultasi dokter"},medium:{bg:"rgba(255,159,10,0.07)",br:"rgba(255,159,10,0.12)",cl:"#FF9F0A",ic:"⚡",tx:"Sedang — Pantau respons bayi"},low:{bg:"rgba(48,209,88,0.07)",br:"rgba(48,209,88,0.12)",cl:"#30D158",ic:"✅",tx:"Rendah — Tangisan normal"}}[level];if(!c)return null;return <div className="glass" style={{background:c.bg,border:"1px solid "+c.br,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:18}}>{c.ic}</span><div><div style={{fontFamily:"'SF Mono',monospace",fontSize:10,color:c.cl,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px"}}>Urgensi</div><div style={{fontSize:13,marginTop:1}}>{c.tx}</div></div></div>;}
 
-        function App() {
-          const [activeTab, setActiveTab] = useState('record'); 
-          const [appState, setAppState] = useState('idle'); 
-          const [timeLeft, setTimeLeft] = useState(5);
-          const [currentResult, setCurrentResult] = useState(null);
-          
-          const [history, setHistory] = useState([]);
-          const [groqAnalysis, setGroqAnalysis] = useState(null);
-          const [isGroqThinking, setIsGroqThinking] = useState(false);
-          const [showSettings, setShowSettings] = useState(false);
-          
-          // API KEY GROQ ANDA
-          const [apiKey, setApiKey] = useState('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');
-          const timerRef = useRef(null);
+function App(){
+const[phase,setPhase]=useState("idle");const[elapsed,setElapsed]=useState(0);const[specData,setSpecData]=useState([]);const[results,setResults]=useState(null);const[aiAnalysis,setAiAnalysis]=useState("");const[aiAdvice,setAiAdvice]=useState("");const[urgency,setUrgency]=useState("low");const[error,setError]=useState(null);
 
-          useEffect(() => {
-            const saved = localStorage.getItem('babycry_history_v2');
-            if (saved) setHistory(JSON.parse(saved));
-          }, []);
+const msRef=useRef(null),acRef=useRef(null),anRef=useRef(null),fhRef=useRef([]),tmRef=useRef(null),clRef=useRef(null);
 
-          useEffect(() => {
-            localStorage.setItem('babycry_history_v2', JSON.stringify(history));
-          }, [history]);
+useEffect(()=>{
+  // Menetapkan kunci API Groq Anda secara langsung
+  window.__GROQ_KEY = "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";
+},[]);
 
-          const handleStartRecord = async () => {
-            setAppState('recording');
-            setTimeLeft(5);
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              stream.getTracks().forEach(track => track.stop());
-            } catch(e) { console.log("Simulasi mic"); }
+const start=useCallback(async()=>{try{setError(null);setResults(null);setAiAnalysis("");setAiAdvice("");setSpecData([]);fhRef.current=[];const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});msRef.current=s;const ac=new(window.AudioContext||window.webkitAudioContext)();acRef.current=ac;const src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0.8;src.connect(an);anRef.current=an;setPhase("recording");setElapsed(0);tmRef.current=setInterval(()=>setElapsed(e=>e+1),1000);clRef.current=setInterval(()=>{const f=extractFeatures(an,ac.sampleRate);if(f.avgAmplitude>3){fhRef.current.push(f);setSpecData(p=>[...p,f]);}},200);}catch(e){setError(e.name==="NotAllowedError"?"Izin mikrofon ditolak. Buka Pengaturan > Safari > Mikrofon dan izinkan.":"Error: "+e.message);}
+},[]);
 
-            timerRef.current = setInterval(() => {
-              setTimeLeft((prev) => {
-                if (prev <= 1) {
-                  clearInterval(timerRef.current);
-                  processAudio();
-                  return 0;
-                }
-                return prev - 1;
-              });
-            }, 1000);
-          };
+const stop=useCallback(async()=>{clearInterval(tmRef.current);clearInterval(clRef.current);msRef.current?.getTracks().forEach(t=>t.stop());acRef.current?.close();setPhase("analyzing");if(fhRef.current.length<5){setError("Data tidak cukup. Rekam minimal 3 detik dengan tangisan jelas.");setPhase("idle");return;}
+if(!window.__GROQ_KEY){setError("API Key Groq belum diatur.");setPhase("idle");return;}
+try{const r=await classify(fhRef.current);if(r?.predictions){setResults(r.predictions);setAiAnalysis(r.analysis||"");setAiAdvice(r.contextual_advice||"");setUrgency(r.urgency||"low");setPhase("results");}else{setError("Gagal menganalisis. Periksa API key dan coba lagi.");setPhase("idle");}}catch(e){setError("Error: "+e.message);setPhase("idle");}
+},[]);
 
-          const processAudio = () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setAppState('analyzing');
-            setTimeout(() => {
-              const randomCategory = CRY_CATEGORIES[Math.floor(Math.random() * CRY_CATEGORIES.length)];
-              const confidence = Math.floor(Math.random() * (98 - 75 + 1)) + 75;
-              const resultData = { ...randomCategory, confidence, timestamp: new Date().toISOString(), id: Date.now().toString() };
-              
-              setCurrentResult(resultData);
-              setHistory(prev => [resultData, ...prev]); 
-              setAppState('result');
-            }, 2500);
-          };
+const reset=()=>{setPhase("idle");setResults(null);setAiAnalysis("");setAiAdvice("");setSpecData([]);setElapsed(0);setError(null);};
+const fmt=s=>`${Math.floor(s/60).toString().padStart(2,"0")}:${(s%60).toString().padStart(2,"0")}`;
 
-          const analyzeHealthWithGroq = async () => {
-            if (history.length === 0) {
-              setGroqAnalysis({ status: 'empty', text: 'Data historis belum ada. Rekam tangisan terlebih dahulu.' });
-              return;
-            }
-            if (!apiKey) {
-              setGroqAnalysis({ status: 'error', text: 'API Key Groq kosong. Silakan isi pengaturan.' });
-              return;
-            }
+return(<div>
+<div style={{textAlign:"center",padding:"48px 24px 20px",animation:"fadeIn 0.8s"}}>
+<div className="pill" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(10,132,255,0.08)",border:"1px solid rgba(10,132,255,0.12)",padding:"5px 16px",marginBottom:16}}><div style={{width:6,height:6,borderRadius:"50%",background:"#0A84FF"}}/><span style={{fontFamily:"'SF Mono',monospace",fontSize:11,fontWeight:600,color:"#0A84FF",letterSpacing:"0.5px"}}>DeepInfant x Groq</span></div>
+<h1 style={{fontWeight:700,fontSize:34,margin:0,letterSpacing:"-1px",lineHeight:1.1}}>Baby Cry<br/>Translator</h1>
+<p style={{fontSize:15,color:"#86868B",marginTop:8,letterSpacing:"-0.2px"}}>Analisis tangisan bayi berbasis AI Llama-3</p>
+</div>
+<div style={{maxWidth:440,margin:"0 auto",padding:"0 20px 48px"}}>
+<div style={{textAlign:"center",margin:"24px 0 20px"}}><div style={{position:"relative",width:140,height:140,margin:"0 auto"}}>
+{phase==="recording"&&<div style={{position:"absolute",inset:-4,borderRadius:"50%",border:"2px solid rgba(10,132,255,0.2)",animation:"breathe 2s ease-in-out infinite"}}/>}
+{phase==="analyzing"&&<div style={{position:"absolute",inset:-6,borderRadius:"50%",border:"2.5px solid transparent",borderTopColor:"#0A84FF",animation:"spin 0.8s linear infinite"}}/>}
+<div className="glass" style={{width:140,height:140,borderRadius:"50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,boxShadow:phase==="recording"?"0 4px 30px rgba(10,132,255,0.12)":"0 2px 20px rgba(0,0,0,0.06)",transition:"all 0.4s ease"}}>
+<span style={{fontSize:42}}>{phase==="analyzing"?"🧠":phase==="recording"?"👶":phase==="results"?"✅":"🎙"}</span>
+{phase==="recording"&&<span style={{fontFamily:"'SF Mono',monospace",fontSize:18,fontWeight:600,color:"#0A84FF",letterSpacing:"1px"}}>{fmt(elapsed)}</span>}
+{phase==="analyzing"&&<span style={{fontSize:12,color:"#86868B"}}>Menganalisis...</span>}
+</div></div></div>
 
-            setIsGroqThinking(true);
-            setGroqAnalysis(null);
+{phase==="recording"&&<div style={{marginBottom:10,animation:"fadeIn 0.4s"}}><div style={{fontFamily:"'SF Mono',monospace",fontSize:11,color:"#86868B",marginBottom:5,fontWeight:500}}>Waveform</div><Wave aRef={anRef} rec={true}/></div>}
+{specData.length>0&&<div style={{marginBottom:14,animation:"fadeIn 0.4s"}}><div style={{fontFamily:"'SF Mono',monospace",fontSize:11,color:"#86868B",marginBottom:5,fontWeight:500}}>Mel-Spectrogram</div><Spectrogram data={specData} rec={phase==="recording"}/></div>}
 
-            const historyText = history.map((item, index) => 
-              `${index + 1}. Waktu: ${new Date(item.timestamp).toLocaleString('id-ID')}, Prediksi: ${item.label} (Akurasi: ${item.confidence}%)`
-            ).join('\n');
+<div style={{textAlign:"center",margin:"20px 0"}}>
+{phase==="idle"&&<button onClick={start} style={{background:"#0A84FF",color:"#FFF",border:"none",borderRadius:14,padding:"16px 48px",fontWeight:600,fontSize:17,cursor:"pointer",boxShadow:"0 4px 16px rgba(10,132,255,0.3)",letterSpacing:"-0.3px"}}>Mulai Rekam</button>}
+{phase==="recording"&&<button onClick={stop} style={{background:"#FF453A",color:"#FFF",border:"none",borderRadius:14,padding:"16px 44px",fontWeight:600,fontSize:17,cursor:"pointer",boxShadow:"0 4px 16px rgba(255,69,58,0.3)"}}>Berhenti & Analisis</button>}
+{phase==="analyzing"&&<div style={{height:4,borderRadius:2,overflow:"hidden",background:"rgba(0,0,0,0.05)",width:"60%",margin:"0 auto"}}><div style={{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,#0A84FF,#BF5AF2,#FF375F,transparent)",backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/></div>}
+{phase==="idle"&&!error&&<p style={{fontSize:13,color:"#AEAEB2",marginTop:12}}>Dekatkan mikrofon ke bayi · Minimal 3 detik</p>}
+</div>
 
-            try {
-              const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${apiKey}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  model: 'llama3-8b-8192',
-                  messages: [
-                    {
-                      role: 'system',
-                      content: 'Anda dokter anak AI. Analisis riwayat tangisan bayi ini. Output HARUS berformat JSON murni: {"urgency": "Normal" atau "Perlu Perhatian", "dominant": "Penyebab paling dominan", "analysis": "Analisis medis ramah dan saran penanganan"}. Tanpa teks tambahan apapun.'
-                    },
-                    { role: 'user', content: `Riwayat tangisan:\n${historyText}` }
-                  ],
-                  response_format: { type: "json_object" },
-                  temperature: 0.5
-                })
-              });
+{error&&<div className="glass" style={{background:"rgba(255,69,58,0.06)",border:"1px solid rgba(255,69,58,0.12)",padding:16,marginBottom:14}}><p style={{fontSize:14,color:"#FF453A",margin:0}}>⚠️ {error}</p>{phase!=="recording"&&<button onClick={reset} style={{marginTop:10,background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",borderRadius:10,padding:"8px 20px",color:"#FF453A",fontSize:14,cursor:"pointer",fontWeight:500}}>Coba Lagi</button>}</div>}
 
-              if (!response.ok) throw new Error(`API Error: ${response.status}`);
-              const data = await response.json();
-              const aiContent = JSON.parse(data.choices[0].message.content);
+{results&&phase==="results"&&(<div style={{display:"flex",flexDirection:"column",gap:10,animation:"fadeIn 0.5s"}}>
+<Urgency level={urgency}/>
 
-              setGroqAnalysis({
-                status: 'success',
-                totalRecords: history.length,
-                urgency: aiContent.urgency || 'Normal',
-                urgencyColor: aiContent.urgency === 'Perlu Perhatian' ? 'text-red-600 bg-red-100' : 'text-teal-600 bg-teal-100',
-                text: aiContent.analysis || 'Analisis selesai.',
-                dominant: aiContent.dominant || 'Campuran'
-              });
-            } catch (err) {
-              setGroqAnalysis({ status: 'error', text: `Gagal: ${err.message}` });
-            } finally {
-              setIsGroqThinking(false);
-            }
-          };
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,padding:"0 2px"}}><span style={{fontWeight:600,fontSize:20,letterSpacing:"-0.5px"}}>Hasil Analisis</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:11,color:"#AEAEB2",background:"rgba(0,0,0,0.03)",padding:"4px 10px",borderRadius:8}}>{specData.length} frame</span></div>
+{results.map((p,i)=><ResultCard key={p.class} pred={p} rank={i}/>)}
+{aiAdvice&&<div className="glass" style={{background:"rgba(191,90,242,0.05)",border:"1px solid rgba(191,90,242,0.1)",padding:18}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:28,height:28,borderRadius:8,background:"rgba(191,90,242,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🤖</div><span style={{fontWeight:600,fontSize:14,color:"#BF5AF2"}}>Rekomendasi AI Llama-3</span></div><p style={{fontSize:14,color:"#3A3A3C",lineHeight:1.6,margin:0}}>{aiAdvice}</p></div>}
+{aiAnalysis&&<div className="glass" style={{background:"rgba(10,132,255,0.04)",border:"1px solid rgba(10,132,255,0.08)",padding:18}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:28,height:28,borderRadius:8,background:"rgba(10,132,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🧠</div><span style={{fontWeight:600,fontSize:14,color:"#0A84FF"}}>Analisis Akustik</span></div><p style={{fontSize:14,color:"#6E6E73",lineHeight:1.55,margin:0}}>{aiAnalysis}</p></div>}
+<div className="glass" style={{background:"rgba(0,0,0,0.02)",padding:16}}><p style={{fontSize:12,color:"#AEAEB2",margin:0,lineHeight:1.55}}>Berbasis arsitektur DeepInfant V2 (CNN-LSTM Hybrid). Hasil estimasi, bukan pengganti diagnosis medis.</p></div>
+<button onClick={reset} style={{background:"rgba(0,0,0,0.04)",border:"none",borderRadius:14,padding:"14px 0",fontWeight:600,fontSize:16,color:"#0A84FF",cursor:"pointer",width:"100%"}}>Rekam Ulang</button>
+</div>)}
 
-          const formatTime = (iso) => {
-            const d = new Date(iso);
-            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' - ' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-          };
+{phase==="idle"&&!error&&(<div style={{animation:"slideUp 0.6s ease 0.2s both"}}>
 
-          return (
-            <div className="relative min-h-screen flex flex-col items-center justify-start pt-10 px-6 font-sans pb-28">
-              <div className="relative z-10 w-full max-w-[380px] flex flex-col h-full">
-                
-                {/* Header */}
-                <div className="text-center mb-8 relative">
-                  <button onClick={() => setShowSettings(!showSettings)} className="absolute right-0 top-0 p-2 text-slate-400 hover:text-slate-600 bg-white/40 rounded-full">
-                    ⚙️
-                  </button>
-                  <div className="inline-flex items-center justify-center gap-2 bg-white/50 px-4 py-1.5 rounded-full shadow-sm border border-white mb-3">
-                    <span className="text-orange-500 text-sm">🧠</span>
-                    <span className="text-slate-700 text-xs font-bold tracking-wide">Powered by Groq API</span>
-                  </div>
-                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">Baby Cry <br/> Translator</h1>
-                </div>
+<div className="glass" style={{padding:20,marginTop:8}}>
+<div style={{fontWeight:600,fontSize:16,marginBottom:14,letterSpacing:"-0.3px"}}>Fitur Lengkap</div>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+{[{icon:"📋",t:"Langkah Praktis",d:"Panduan step-by-step",cl:"#0A84FF"},{icon:"🤖",t:"AI Kontekstual",d:"Rekomendasi dari Groq",cl:"#BF5AF2"},{icon:"⚠️",t:"Tanda Bahaya",d:"Kapan harus ke dokter",cl:"#FF453A"},{icon:"🎨",t:"Tips Visual",d:"Ilustrasi posisi & teknik",cl:"#30D158"}].map((f,i)=>(<div key={i} className="glass-inner" style={{padding:14}}><div style={{width:36,height:36,borderRadius:10,background:f.cl+"08",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:8}}>{f.icon}</div><div style={{fontWeight:600,fontSize:14,letterSpacing:"-0.2px"}}>{f.t}</div><div style={{fontSize:12,color:"#AEAEB2",marginTop:3,lineHeight:1.35}}>{f.d}</div></div>))}
+</div></div>
+<div className="glass" style={{padding:18,marginTop:10}}><div style={{fontWeight:600,fontSize:14,marginBottom:10}}>Spesifikasi Model</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 20px"}}>{[["Arsitektur","CNN-LSTM"],["Processing Unit","Groq LPU"],["LLM Model","Llama-3 8B"],["Mel Bands","128"],["Kelas","9"],["Kecepatan","~800ms"]].map(([k,v],i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}><span style={{fontSize:13,color:"#AEAEB2"}}>{k}</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:13,fontWeight:500}}>{v}</span></div>))}</div></div>
+<p style={{textAlign:"center",marginTop:16,fontSize:12,color:"#C7C7CC"}}>Powered by Groq Cloud API</p>
+</div>)}
+</div></div>);}
 
-                {/* Settings */}
-                {showSettings && (
-                  <div className="mb-6 bg-white/70 border border-white p-4 rounded-2xl shadow-sm">
-                    <label className="text-xs font-bold text-slate-500 mb-2 block">🔑 Groq API Key Anda</label>
-                    <input 
-                      type="text" 
-                      value={apiKey} 
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="w-full bg-white/50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {/* Tab 1: Rekam */}
-                {activeTab === 'record' && (
-                  <div className="flex flex-col items-center flex-1">
-                    {appState !== 'result' ? (
-                      <>
-                        <p className="text-slate-600 text-sm font-medium mb-10">
-                          {appState === 'recording' ? `Merekam... 00:0${timeLeft}` : appState === 'analyzing' ? 'Mengekstrak fitur...' : 'Siap mendengarkan bayi Anda'}
-                        </p>
-                        <div className={`relative w-[150px] h-[150px] bg-white/60 shadow-lg rounded-[40px] flex items-center justify-center mb-12 ${appState === 'analyzing' ? 'animate-pulse' : ''}`}>
-                          <span className={`text-6xl ${appState === 'recording' ? 'animate-bounce' : ''}`}>
-                            {appState === 'analyzing' ? '⚙️' : '🎙️'}
-                          </span>
-                        </div>
-                        {appState === 'idle' ? (
-                          <button onClick={handleStartRecord} className="w-full bg-blue-600 text-white font-semibold text-lg py-4 rounded-2xl shadow-lg">Mulai Rekam AI</button>
-                        ) : appState === 'recording' ? (
-                          <button onClick={processAudio} className="w-full bg-red-500 text-white font-semibold text-lg py-4 rounded-2xl shadow-lg">Selesai Lebih Cepat</button>
-                        ) : (
-                          <div className="w-full bg-slate-300/50 text-slate-700 font-semibold text-lg py-4 rounded-2xl text-center">Memproses Model...</div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="w-full bg-white/80 shadow-xl rounded-3xl p-6 mb-6">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Terdeteksi:</p>
-                        <div className="flex justify-between items-end mb-6">
-                          <h2 className={`text-3xl font-black ${currentResult.color}`}>{currentResult.label}</h2>
-                          <div className="text-right">
-                            <span className="text-2xl font-bold text-slate-800">{currentResult.confidence}%</span>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase">Akurasi AI</p>
-                          </div>
-                        </div>
-                        <button onClick={() => { setAppState('idle'); setCurrentResult(null); }} className="w-full bg-slate-100 text-slate-800 font-bold py-3 rounded-xl">Kembali</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tab 2: Riwayat */}
-                {activeTab === 'history' && (
-                  <div className="flex flex-col flex-1 w-full h-[55vh] overflow-y-auto">
-                    <div className="flex justify-between mb-4">
-                      <h2 className="text-xl font-bold text-slate-800">Riwayat</h2>
-                      {history.length > 0 && <button onClick={() => setHistory([])} className="text-xs text-red-500 font-bold">Hapus</button>}
-                    </div>
-                    {history.length === 0 ? (
-                      <div className="text-center mt-10"><span className="text-4xl mb-2 block">🕒</span><p className="text-slate-500 text-sm">Belum ada data.</p></div>
-                    ) : (
-                      <div className="space-y-3">
-                        {history.map((item) => (
-                          <div key={item.id} className={`bg-white/80 border ${item.border} rounded-xl p-4 flex justify-between shadow-sm`}>
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{item.icon}</span>
-                              <div>
-                                <h3 className={`font-bold text-sm ${item.color}`}>{item.label}</h3>
-                                <p className="text-xs text-slate-500">{formatTime(item.timestamp)}</p>
-                              </div>
-                            </div>
-                            <div className="bg-slate-100 px-2 py-1 rounded text-xs font-bold h-fit">{item.confidence}%</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tab 3: Kesehatan */}
-                {activeTab === 'health' && (
-                  <div className="flex flex-col flex-1 w-full">
-                    <h2 className="text-xl font-bold text-slate-800 mb-1">Saran Dokter AI</h2>
-                    <p className="text-sm text-slate-500 mb-6">Llama 3 via Groq Cloud</p>
-
-                    <div className="bg-white/80 shadow-lg rounded-3xl p-5">
-                      {!groqAnalysis && !isGroqThinking && (
-                        <div className="text-center py-6">
-                          <span className="text-5xl mb-4 block">🩺</span>
-                          <p className="text-slate-600 text-sm mb-6">Minta Groq Llama-3 menganalisis riwayat untuk memberikan saran medis awal.</p>
-                          <button onClick={analyzeHealthWithGroq} className="bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl w-full">Analisis dengan Groq</button>
-                        </div>
-                      )}
-
-                      {isGroqThinking && (
-                        <div className="text-center py-10">
-                          <span className="text-4xl animate-bounce block mb-4">🧠</span>
-                          <p className="text-slate-700 font-medium">Groq sedang berpikir...</p>
-                        </div>
-                      )}
-
-                      {groqAnalysis && !isGroqThinking && (
-                        <div>
-                          {groqAnalysis.status === 'error' || groqAnalysis.status === 'empty' ? (
-                            <div className="text-center py-4">
-                              <p className="text-slate-700 text-sm font-medium">{groqAnalysis.text}</p>
-                              <button onClick={() => setGroqAnalysis(null)} className="mt-4 text-xs font-bold bg-slate-200 px-4 py-2 rounded-lg">Coba Lagi</button>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className={`flex justify-between mb-4 p-3 rounded-xl ${groqAnalysis.urgencyColor}`}>
-                                <span className="text-xs font-bold uppercase">Status:</span>
-                                <span className="text-sm font-black">{groqAnalysis.urgency}</span>
-                              </div>
-                              <div className="text-[14px] text-slate-800 leading-relaxed mb-6 bg-white/60 p-4 rounded-xl shadow-sm whitespace-pre-wrap">
-                                {groqAnalysis.text}
-                              </div>
-                              <button onClick={() => setGroqAnalysis(null)} className="w-full text-xs font-bold text-slate-500 py-2 bg-slate-100 rounded-lg">Hapus Analisis</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              {/* Bottom Nav */}
-              <div className="fixed bottom-6 w-[90%] max-w-[340px] bg-white/90 shadow-lg rounded-[32px] flex justify-between p-2 z-50">
-                <button onClick={() => setActiveTab('record')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'record' ? 'bg-blue-100 text-blue-600' : 'text-slate-500'}`}>
-                  🎙️ {activeTab === 'record' && <span className="text-sm font-bold">Rekam</span>}
-                </button>
-                <button onClick={() => setActiveTab('history')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'history' ? 'bg-purple-100 text-purple-600' : 'text-slate-500'}`}>
-                  🕒 {activeTab === 'history' && <span className="text-sm font-bold">Riwayat</span>}
-                </button>
-                <button onClick={() => setActiveTab('health')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'health' ? 'bg-teal-100 text-teal-600' : 'text-slate-500'}`}>
-                  🩺 {activeTab === 'health' && <span className="text-sm font-bold">Kesehatan</span>}
-                </button>
-              </div>
-            </div>
-          );
-        }
-
-        // Render yang kompatibel dengan React 18
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
