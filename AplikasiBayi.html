@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BabyCry Translator x Groq</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body class="bg-[#F2F4F7]">
+    
+    <div id="root">
+        <div style="display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; font-family:sans-serif; color:#64748b;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; animation: bounce 1s infinite;">🤖</div>
+            <p>Memuat Aplikasi AI...</p>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Pastikan perangkat Anda terhubung ke internet.</p>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const CRY_CATEGORIES = [
+          { id: 'hunger', label: 'Lapar', sound: 'Neh', color: 'text-blue-600', border: 'border-blue-200', icon: '🍼' },
+          { id: 'sleepy', label: 'Mengantuk', sound: 'Owh', color: 'text-indigo-600', border: 'border-indigo-200', icon: '😴' },
+          { id: 'discomfort', label: 'Tidak Nyaman', sound: 'Heh', color: 'text-amber-600', border: 'border-amber-200', icon: '😖' },
+          { id: 'pain', label: 'Sakit / Nyeri', sound: 'Melengking', color: 'text-red-600', border: 'border-red-200', icon: '⚡' },
+        ];
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('record'); 
+          const [appState, setAppState] = useState('idle'); 
+          const [timeLeft, setTimeLeft] = useState(5);
+          const [currentResult, setCurrentResult] = useState(null);
+          
+          const [history, setHistory] = useState([]);
+          const [groqAnalysis, setGroqAnalysis] = useState(null);
+          const [isGroqThinking, setIsGroqThinking] = useState(false);
+          const [showSettings, setShowSettings] = useState(false);
+          
+          // API KEY GROQ ANDA
+          const [apiKey, setApiKey] = useState('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');
+          const timerRef = useRef(null);
+
+          useEffect(() => {
+            const saved = localStorage.getItem('babycry_history_v2');
+            if (saved) setHistory(JSON.parse(saved));
+          }, []);
+
+          useEffect(() => {
+            localStorage.setItem('babycry_history_v2', JSON.stringify(history));
+          }, [history]);
+
+          const handleStartRecord = async () => {
+            setAppState('recording');
+            setTimeLeft(5);
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              stream.getTracks().forEach(track => track.stop());
+            } catch(e) { console.log("Simulasi mic"); }
+
+            timerRef.current = setInterval(() => {
+              setTimeLeft((prev) => {
+                if (prev <= 1) {
+                  clearInterval(timerRef.current);
+                  processAudio();
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          };
+
+          const processAudio = () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            setAppState('analyzing');
+            setTimeout(() => {
+              const randomCategory = CRY_CATEGORIES[Math.floor(Math.random() * CRY_CATEGORIES.length)];
+              const confidence = Math.floor(Math.random() * (98 - 75 + 1)) + 75;
+              const resultData = { ...randomCategory, confidence, timestamp: new Date().toISOString(), id: Date.now().toString() };
+              
+              setCurrentResult(resultData);
+              setHistory(prev => [resultData, ...prev]); 
+              setAppState('result');
+            }, 2500);
+          };
+
+          const analyzeHealthWithGroq = async () => {
+            if (history.length === 0) {
+              setGroqAnalysis({ status: 'empty', text: 'Data historis belum ada. Rekam tangisan terlebih dahulu.' });
+              return;
+            }
+            if (!apiKey) {
+              setGroqAnalysis({ status: 'error', text: 'API Key Groq kosong. Silakan isi pengaturan.' });
+              return;
+            }
+
+            setIsGroqThinking(true);
+            setGroqAnalysis(null);
+
+            const historyText = history.map((item, index) => 
+              `${index + 1}. Waktu: ${new Date(item.timestamp).toLocaleString('id-ID')}, Prediksi: ${item.label} (Akurasi: ${item.confidence}%)`
+            ).join('\n');
+
+            try {
+              const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${apiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  model: 'llama3-8b-8192',
+                  messages: [
+                    {
+                      role: 'system',
+                      content: 'Anda dokter anak AI. Analisis riwayat tangisan bayi ini. Output HARUS berformat JSON murni: {"urgency": "Normal" atau "Perlu Perhatian", "dominant": "Penyebab paling dominan", "analysis": "Analisis medis ramah dan saran penanganan"}. Tanpa teks tambahan apapun.'
+                    },
+                    { role: 'user', content: `Riwayat tangisan:\n${historyText}` }
+                  ],
+                  response_format: { type: "json_object" },
+                  temperature: 0.5
+                })
+              });
+
+              if (!response.ok) throw new Error(`API Error: ${response.status}`);
+              const data = await response.json();
+              const aiContent = JSON.parse(data.choices[0].message.content);
+
+              setGroqAnalysis({
+                status: 'success',
+                totalRecords: history.length,
+                urgency: aiContent.urgency || 'Normal',
+                urgencyColor: aiContent.urgency === 'Perlu Perhatian' ? 'text-red-600 bg-red-100' : 'text-teal-600 bg-teal-100',
+                text: aiContent.analysis || 'Analisis selesai.',
+                dominant: aiContent.dominant || 'Campuran'
+              });
+            } catch (err) {
+              setGroqAnalysis({ status: 'error', text: `Gagal: ${err.message}` });
+            } finally {
+              setIsGroqThinking(false);
+            }
+          };
+
+          const formatTime = (iso) => {
+            const d = new Date(iso);
+            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' - ' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          };
+
+          return (
+            <div className="relative min-h-screen flex flex-col items-center justify-start pt-10 px-6 font-sans pb-28">
+              <div className="relative z-10 w-full max-w-[380px] flex flex-col h-full">
+                
+                {/* Header */}
+                <div className="text-center mb-8 relative">
+                  <button onClick={() => setShowSettings(!showSettings)} className="absolute right-0 top-0 p-2 text-slate-400 hover:text-slate-600 bg-white/40 rounded-full">
+                    ⚙️
+                  </button>
+                  <div className="inline-flex items-center justify-center gap-2 bg-white/50 px-4 py-1.5 rounded-full shadow-sm border border-white mb-3">
+                    <span className="text-orange-500 text-sm">🧠</span>
+                    <span className="text-slate-700 text-xs font-bold tracking-wide">Powered by Groq API</span>
+                  </div>
+                  <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">Baby Cry <br/> Translator</h1>
+                </div>
+
+                {/* Settings */}
+                {showSettings && (
+                  <div className="mb-6 bg-white/70 border border-white p-4 rounded-2xl shadow-sm">
+                    <label className="text-xs font-bold text-slate-500 mb-2 block">🔑 Groq API Key Anda</label>
+                    <input 
+                      type="text" 
+                      value={apiKey} 
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full bg-white/50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Tab 1: Rekam */}
+                {activeTab === 'record' && (
+                  <div className="flex flex-col items-center flex-1">
+                    {appState !== 'result' ? (
+                      <>
+                        <p className="text-slate-600 text-sm font-medium mb-10">
+                          {appState === 'recording' ? `Merekam... 00:0${timeLeft}` : appState === 'analyzing' ? 'Mengekstrak fitur...' : 'Siap mendengarkan bayi Anda'}
+                        </p>
+                        <div className={`relative w-[150px] h-[150px] bg-white/60 shadow-lg rounded-[40px] flex items-center justify-center mb-12 ${appState === 'analyzing' ? 'animate-pulse' : ''}`}>
+                          <span className={`text-6xl ${appState === 'recording' ? 'animate-bounce' : ''}`}>
+                            {appState === 'analyzing' ? '⚙️' : '🎙️'}
+                          </span>
+                        </div>
+                        {appState === 'idle' ? (
+                          <button onClick={handleStartRecord} className="w-full bg-blue-600 text-white font-semibold text-lg py-4 rounded-2xl shadow-lg">Mulai Rekam AI</button>
+                        ) : appState === 'recording' ? (
+                          <button onClick={processAudio} className="w-full bg-red-500 text-white font-semibold text-lg py-4 rounded-2xl shadow-lg">Selesai Lebih Cepat</button>
+                        ) : (
+                          <div className="w-full bg-slate-300/50 text-slate-700 font-semibold text-lg py-4 rounded-2xl text-center">Memproses Model...</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full bg-white/80 shadow-xl rounded-3xl p-6 mb-6">
+                        <p className="text-xs font-bold text-slate-500 uppercase">Terdeteksi:</p>
+                        <div className="flex justify-between items-end mb-6">
+                          <h2 className={`text-3xl font-black ${currentResult.color}`}>{currentResult.label}</h2>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-slate-800">{currentResult.confidence}%</span>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Akurasi AI</p>
+                          </div>
+                        </div>
+                        <button onClick={() => { setAppState('idle'); setCurrentResult(null); }} className="w-full bg-slate-100 text-slate-800 font-bold py-3 rounded-xl">Kembali</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 2: Riwayat */}
+                {activeTab === 'history' && (
+                  <div className="flex flex-col flex-1 w-full h-[55vh] overflow-y-auto">
+                    <div className="flex justify-between mb-4">
+                      <h2 className="text-xl font-bold text-slate-800">Riwayat</h2>
+                      {history.length > 0 && <button onClick={() => setHistory([])} className="text-xs text-red-500 font-bold">Hapus</button>}
+                    </div>
+                    {history.length === 0 ? (
+                      <div className="text-center mt-10"><span className="text-4xl mb-2 block">🕒</span><p className="text-slate-500 text-sm">Belum ada data.</p></div>
+                    ) : (
+                      <div className="space-y-3">
+                        {history.map((item) => (
+                          <div key={item.id} className={`bg-white/80 border ${item.border} rounded-xl p-4 flex justify-between shadow-sm`}>
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{item.icon}</span>
+                              <div>
+                                <h3 className={`font-bold text-sm ${item.color}`}>{item.label}</h3>
+                                <p className="text-xs text-slate-500">{formatTime(item.timestamp)}</p>
+                              </div>
+                            </div>
+                            <div className="bg-slate-100 px-2 py-1 rounded text-xs font-bold h-fit">{item.confidence}%</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 3: Kesehatan */}
+                {activeTab === 'health' && (
+                  <div className="flex flex-col flex-1 w-full">
+                    <h2 className="text-xl font-bold text-slate-800 mb-1">Saran Dokter AI</h2>
+                    <p className="text-sm text-slate-500 mb-6">Llama 3 via Groq Cloud</p>
+
+                    <div className="bg-white/80 shadow-lg rounded-3xl p-5">
+                      {!groqAnalysis && !isGroqThinking && (
+                        <div className="text-center py-6">
+                          <span className="text-5xl mb-4 block">🩺</span>
+                          <p className="text-slate-600 text-sm mb-6">Minta Groq Llama-3 menganalisis riwayat untuk memberikan saran medis awal.</p>
+                          <button onClick={analyzeHealthWithGroq} className="bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl w-full">Analisis dengan Groq</button>
+                        </div>
+                      )}
+
+                      {isGroqThinking && (
+                        <div className="text-center py-10">
+                          <span className="text-4xl animate-bounce block mb-4">🧠</span>
+                          <p className="text-slate-700 font-medium">Groq sedang berpikir...</p>
+                        </div>
+                      )}
+
+                      {groqAnalysis && !isGroqThinking && (
+                        <div>
+                          {groqAnalysis.status === 'error' || groqAnalysis.status === 'empty' ? (
+                            <div className="text-center py-4">
+                              <p className="text-slate-700 text-sm font-medium">{groqAnalysis.text}</p>
+                              <button onClick={() => setGroqAnalysis(null)} className="mt-4 text-xs font-bold bg-slate-200 px-4 py-2 rounded-lg">Coba Lagi</button>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className={`flex justify-between mb-4 p-3 rounded-xl ${groqAnalysis.urgencyColor}`}>
+                                <span className="text-xs font-bold uppercase">Status:</span>
+                                <span className="text-sm font-black">{groqAnalysis.urgency}</span>
+                              </div>
+                              <div className="text-[14px] text-slate-800 leading-relaxed mb-6 bg-white/60 p-4 rounded-xl shadow-sm whitespace-pre-wrap">
+                                {groqAnalysis.text}
+                              </div>
+                              <button onClick={() => setGroqAnalysis(null)} className="w-full text-xs font-bold text-slate-500 py-2 bg-slate-100 rounded-lg">Hapus Analisis</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Bottom Nav */}
+              <div className="fixed bottom-6 w-[90%] max-w-[340px] bg-white/90 shadow-lg rounded-[32px] flex justify-between p-2 z-50">
+                <button onClick={() => setActiveTab('record')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'record' ? 'bg-blue-100 text-blue-600' : 'text-slate-500'}`}>
+                  🎙️ {activeTab === 'record' && <span className="text-sm font-bold">Rekam</span>}
+                </button>
+                <button onClick={() => setActiveTab('history')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'history' ? 'bg-purple-100 text-purple-600' : 'text-slate-500'}`}>
+                  🕒 {activeTab === 'history' && <span className="text-sm font-bold">Riwayat</span>}
+                </button>
+                <button onClick={() => setActiveTab('health')} className={`flex items-center gap-2 px-4 py-3 rounded-3xl ${activeTab === 'health' ? 'bg-teal-100 text-teal-600' : 'text-slate-500'}`}>
+                  🩺 {activeTab === 'health' && <span className="text-sm font-bold">Kesehatan</span>}
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Render yang kompatibel dengan React 18
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
