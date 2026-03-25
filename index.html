@@ -4,266 +4,459 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Baby Cry Translator — v2</title>
+<title>BabyCare — Cry Translator & Growth Tracker</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A84FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2v20M17 7v10M7 7v10M22 10v4M2 10v4'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
 <style>
-:root{--bg:#F2F2F7;--tx:#1C1C1E;--txm:#8E8E93;--gl:rgba(255,255,255,0.65);--gb:rgba(255,255,255,0.8);--blue:#0A84FF;--red:#FF453A;--purple:#BF5AF2;--green:#32D74B;--orange:#FF9F0A;--cyan:#5AC8FA}
+:root{
+  --bg:#FAF8F5;--card:rgba(255,255,255,0.82);--card-b:rgba(255,255,255,0.9);
+  --tx:#2C2C2E;--tx2:#636366;--tx3:#AEAEB2;
+  --blue:#007AFF;--red:#FF3B30;--green:#34C759;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--cyan:#32ADE6;--teal:#30B0C7;
+  --r:22px
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;min-height:100vh;background:var(--bg);background-image:radial-gradient(at 0% 0%,rgba(10,132,255,0.06) 0px,transparent 50%),radial-gradient(at 100% 0%,rgba(191,90,242,0.06) 0px,transparent 50%);color:var(--tx);-webkit-font-smoothing:antialiased}
-@keyframes slideUp{from{opacity:0;transform:translateY(28px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(10,132,255,.15)}50%{transform:scale(1.05);box-shadow:0 0 0 24px rgba(10,132,255,0)}}
-@keyframes pulseGlow{0%,100%{opacity:.6;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,sans-serif;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.gl{background:var(--gl);-webkit-backdrop-filter:blur(48px) saturate(200%);backdrop-filter:blur(48px) saturate(200%);border:1px solid var(--gb);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,.04),inset 0 1px 1px rgba(255,255,255,.8)}
-.gi{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.6);border-radius:18px}
-.pill{-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-radius:100px}
-button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .2s cubic-bezier(.2,.8,.2,1)}
-button:active{transform:scale(.96)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(0,122,255,.2)}50%{box-shadow:0 0 0 20px rgba(0,122,255,0)}}
+.card{background:var(--card);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--card-b);border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03)}
+.card-s{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.7);border-radius:16px}
+.pill{border-radius:100px}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-family:inherit;cursor:pointer;transition:transform .12s,opacity .12s}
+button:active{transform:scale(.97);opacity:.85}
 canvas{display:block}
-.seg{flex:1;padding:10px 0;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all .3s cubic-bezier(.2,.8,.2,1)}
-.seg.on{color:var(--tx);background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.seg:not(.on){color:var(--txm);background:transparent}
-.wi{display:flex;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(255,69,58,.04);border:1px solid rgba(255,69,58,.08)}
-#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;font-size:16px;color:var(--txm);flex-direction:column;gap:12px}
-#loading .sp{width:32px;height:32px;border:3px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+.btn{width:100%;padding:16px;border-radius:16px;border:none;font-size:16px;font-weight:600;letter-spacing:-.2px}
+.btn-p{background:var(--blue);color:#FFF;box-shadow:0 4px 14px rgba(0,122,255,.25)}
+.btn-s{background:rgba(0,0,0,.04);color:var(--blue)}
+.btn-d{background:var(--red);color:#FFF;box-shadow:0 4px 14px rgba(255,59,48,.2)}
+.inp{width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(0,0,0,.07);font-size:15px;font-family:inherit;background:rgba(0,0,0,.02);outline:none;color:var(--tx);transition:border-color .2s}
+.inp:focus{border-color:var(--blue)}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;display:flex;background:rgba(250,248,245,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-top:1px solid rgba(0,0,0,.06);padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:100}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;background:none;border:none;font-size:10px;font-weight:500;color:var(--tx3);letter-spacing:.2px}
+.tab.on{color:var(--blue)}
+.tab.on svg{stroke-width:2.3}
+.sp{width:24px;height:24px;border:2.5px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+.page{padding:calc(env(safe-area-inset-top) + 16px) 20px calc(76px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh}
+.section-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
+.seg-group{display:flex;background:rgba(0,0,0,.05);border-radius:12px;padding:3px}
+.seg-btn{flex:1;padding:8px 0;border-radius:10px;border:none;font-size:12px;font-weight:600;font-family:inherit;transition:all .25s}
+.seg-btn.on{background:#FFF;color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.seg-btn:not(.on){background:none;color:var(--tx3)}
 </style>
 </head>
 <body>
-<div id="loading"><div class="sp"></div><span>Memuat...</span></div>
 <div id="root"></div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-
 <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
-
 <script>
-var html=htm.bind(React.createElement);
-var useState=React.useState,useRef=React.useRef,useCallback=React.useCallback,useEffect=React.useEffect;
+var h=htm.bind(React.createElement),useState=React.useState,useRef=React.useRef,useEffect=React.useEffect,useCallback=React.useCallback;
 
-function Icon(p){var s=p.size||24,c=p.color||"currentColor",sw=p.strokeWidth||2.2;
-var d={bottle:"M10 2v5.5M14 2v5.5M8 7.5h8M8 12c0-3 8-3 8 0v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-7z",moon:"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z",wind:"M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2",activity:"M22 12h-4l-3 9L9 3l-3 9H2",heart:"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z",zap:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",thermometer:"M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z",help:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01",clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",smile:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01",frown:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01",user:"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z",hand:"M18 11V6a2 2 0 0 0-4 0v4M14 11V4a2 2 0 0 0-4 0v6M10 10V5a2 2 0 0 0-4 0v7M6 12V8a2 2 0 0 0-4 0v9a10 10 0 0 0 20 0v-4a2 2 0 0 0-4 0",airplane:"M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 3.1L7 15l-3.3-.8c-.4-.1-.8.1-1 .5L2 16l4.2 2.8L9 23l1.2-.7c.4-.2.6-.6.5-1L10 18l3.9-2 3.1 6 1.2-1.3c.4-.2.7-.6.6-1.1z",home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",paperclip:"M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48",refresh:"M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15",music:"M9 18V5l12-2v13M9 9l12-2M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",volumex:"M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6",search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",mic:"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8",cpu:"M4 4h16v16H4zM9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3",check:"M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3",bot:"M12 8V4M8 4h8M2 14h2M20 14h2M15 13v2M9 13v2M4 8h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z",alert:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",phone:"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z",file:"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",bar:"M12 20V10M18 20V4M6 20v-4",key:"M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",plus:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8v8M8 12h8"};
-return html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke=${c} stroke-width=${sw} stroke-linecap="round" stroke-linejoin="round"><path d=${d[p.name]||"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"}/></svg>`;}
+/* ======== SVG ICON ======== */
+function Ic(p){var sz=p.s||20,cl=p.c||“currentColor”,sw=p.w||2,paths={
+home:“M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10”,
+mic:“M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8”,
+chart:“M3 3v18h18 M7 16l4-4 4 4 5-6”,
+clock:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2”,
+plus:“M12 5v14M5 12h14”,
+baby:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01”,
+trash:“M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2”,
+bot:“M12 8V4M8 4h8M2 14h2M20 14h2M15 13v2M9 13v2M4 8h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z”,
+alert:“M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01”,
+check:“M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3”,
+cpu:“M4 4h16v16H4zM9 9h6v6H9z”,
+zap:“M13 2L3 14h9l-1 8 10-12h-9l1-8z”,
+send:“M22 2L11 13M22 2l-7 20-4-9-9-4z”,
+key:“M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4”,
+settings:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z”,
+help:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01”,
+back:“M19 12H5M12 19l-7-7 7-7”,
+bottle:“M10 2v5.5M14 2v5.5M8 7.5h8M8 12c0-3 8-3 8 0v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-7z”,
+moon:“M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z”,
+wind:“M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2”,
+activity:“M22 12h-4l-3 9L9 3l-3 9H2”,
+heart:“M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z”,
+frown:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01”,
+thermometer:“M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z”,
+bar:“M12 20V10M18 20V4M6 20v-4”,
+phone:“M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.22 1 .49 2 .7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.81.22 1.81.49 2.81.7A2 2 0 0 1 22 16.92z”
+};return h`<svg width=${sz} height=${sz} viewBox="0 0 24 24" fill="none" stroke=${cl} stroke-width=${sw} stroke-linecap="round" stroke-linejoin="round"><path d=${paths[p.n]||"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"}/></svg>`;}
 
-var CRY_DB={hungry:{id:"hungry",label:"Lapar",labelEn:"Hungry",icon:"bottle",color:"#FF9F0A",colorLight:"#FFF4E0",desc:"Tangisan ritmis dan berulang. Intensitas meningkat jika tidak ditangani.",steps:[{n:1,a:"Periksa waktu makan",d:"Bayi baru lahir makan setiap 2-3 jam.",i:"clock"},{n:2,a:"Tanda lapar awal",d:"Mengisap jari, membuka-tutup mulut.",i:"smile"},{n:3,a:"Berikan ASI/susu",d:"Pastikan pelekatan benar.",i:"heart"},{n:4,a:"Sendawakan",d:"Tegakkan 15-20 mnt, tepuk punggung.",i:"wind"}],warns:["Menolak makan >8 jam","BB tidak naik","Muntah proyektil","Popok kering >6 jam"],tips:[{t:"Cradle Hold",d:"Kepala di lekukan siku, perut bertemu perut."},{t:"Cross-Cradle",d:"Tangan berlawanan menopang kepala."}]},
-belly_pain:{id:"belly_pain",label:"Sakit Perut",labelEn:"Belly Pain",icon:"activity",color:"#FF453A",colorLight:"#FFE5E3",desc:"Tangisan bernada tinggi, kaki ditarik ke perut.",steps:[{n:1,a:"Pijatan I-L-U",d:"Pijat perut searah usus besar.",i:"hand"},{n:2,a:"Airplane Hold",d:"Tengkurapkan di lengan bawah.",i:"airplane"},{n:3,a:"Gerakan sepeda",d:"Gerakkan kaki seperti mengayuh.",i:"refresh"},{n:4,a:"Kompres hangat",d:"Handuk hangat 5-10 menit.",i:"thermometer"}],warns:["Perut keras + muntah hijau","Darah dalam tinja","Tangisan >3 jam","Demam >38°C"],tips:[{t:"Pijat I-L-U",d:"I kiri, L melintang, U terbalik."},{t:"Airplane Hold",d:"Tekanan perut bantu gas keluar."}]},
-burping:{id:"burping",label:"Perlu Bersendawa",labelEn:"Needs Burping",icon:"wind",color:"#32D74B",colorLight:"#E3F9E8",desc:"Tangisan pendek terputus-putus, grunting.",steps:[{n:1,a:"Tegak di bahu",d:"Tepuk punggung bawah ke atas.",i:"user"},{n:2,a:"Duduk di pangkuan",d:"Topang dada, tepuk punggung.",i:"home"},{n:3,a:"Tengkurap pangkuan",d:"Usap punggung.",i:"hand"},{n:4,a:"Tunggu sabar",d:"Ubah posisi tiap 2-3 menit.",i:"clock"}],warns:["Gumoh >2 sendok makan","Kesakitan saat bersendawa"],tips:[{t:"Over-the-Shoulder",d:"Tepuk ritmis, lindungi bahu."},{t:"Sitting Up",d:"Topang dagu & dada."}]},
-discomfort:{id:"discomfort",label:"Tidak Nyaman",labelEn:"Discomfort",icon:"frown",color:"#FF9F0A",colorLight:"#FFF4E0",desc:"Tangisan berselang, berubah saat posisi berganti.",steps:[{n:1,a:"Periksa popok",d:"Ganti jika basah/kotor.",i:"paperclip"},{n:2,a:"Periksa pakaian",d:"Cek hair tourniquet di jari!",i:"user"},{n:3,a:"Ubah posisi",d:"Coba telentang, miring, tegak.",i:"refresh"},{n:4,a:"Periksa lingkungan",d:"Kurangi stimulasi.",i:"home"}],warns:["Ruam melepuh >3 hari","Bengkak di area tertentu"],tips:[{t:"Ganti Popok",d:"Bersihkan depan ke belakang."},{t:"Hair Tourniquet",d:"Periksa SEMUA jari!"}]},
-tired:{id:"tired",label:"Mengantuk",labelEn:"Tired",icon:"moon",color:"#BF5AF2",colorLight:"#F3E8FF",desc:"Tangisan merengek lemah, mengucek mata.",steps:[{n:1,a:"Wake window",d:"0-3bln: 45-90mnt, 3-6bln: 1.5-2.5jam.",i:"clock"},{n:2,a:"Lingkungan tidur",d:"Redupkan lampu, white noise.",i:"moon"},{n:3,a:"Rutinitas",d:"Bedong, ayun, lagu tidur.",i:"music"},{n:4,a:"Letakkan drowsy",d:"Saat mengantuk tapi belum tidur.",i:"home"}],warns:["Tidur >18 jam & sulit dibangunkan","Napas tidak teratur"],tips:[{t:"Bedong",d:"Rapat, pinggul bebas, stop saat berguling."},{t:"Posisi Aman",d:"Telentang, permukaan keras."}]},
-lonely:{id:"lonely",label:"Butuh Perhatian",labelEn:"Lonely",icon:"heart",color:"#0A84FF",colorLight:"#E0F0FF",desc:"Tangisan rendah, berhenti saat digendong.",steps:[{n:1,a:"Skin-to-skin",d:"Dekapkan di dada.",i:"heart"},{n:2,a:"Komunikasi",d:"Tatap mata, bicara lembut.",i:"eye"},{n:3,a:"Carrier",d:"Baby carrier, tangan bebas.",i:"smile"},{n:4,a:"Stimulasi",d:"Mainan kontras, jalan-jalan.",i:"activity"}],warns:["Tidak merespons interaksi >2 bulan"],tips:[{t:"Skin-to-Skin",d:"Mengatur suhu, detak jantung."},{t:"Kangaroo",d:"Menghadap dada, kepala di bawah dagu."}]},
-scared:{id:"scared",label:"Kaget/Takut",labelEn:"Scared",icon:"zap",color:"#FF453A",colorLight:"#FFE5EA",desc:"Tangisan tajam mendadak, respons Moro.",steps:[{n:1,a:"Shhhh",d:"Dekat telinga, lebih keras dari tangisan.",i:"volumex"},{n:2,a:"Bedong",d:"Mengurangi refleks Moro.",i:"heart"},{n:3,a:"Hindari pemicu",d:"Suara keras, gerakan tiba-tiba.",i:"volumex"},{n:4,a:"Peluk ritmis",d:"Goyang kecil ritmis.",i:"refresh"}],warns:["Moro >6 bulan","Kejang"],tips:[{t:"Teknik 5S",d:"Swaddle-Side-Shush-Swing-Suck."},{t:"Shushing",d:"Kontinu, turunkan perlahan."}]},
-cold_hot:{id:"cold_hot",label:"Suhu Tdk Nyaman",labelEn:"Cold/Hot",icon:"thermometer",color:"#5AC8FA",colorLight:"#E0F5FF",desc:"Tangisan kontinu, ketidaknyamanan suhu.",steps:[{n:1,a:"Cek suhu",d:"Sentuh dada/punggung.",i:"thermometer"},{n:2,a:"Sesuaikan pakaian",d:"Dewasa + 1 lapisan.",i:"user"},{n:3,a:"Atur ruangan",d:"Ideal 20-22°C.",i:"home"},{n:4,a:"Periksa tanda",d:"Panas: merah. Dingin: pucat.",i:"search"}],warns:["Suhu >38°C/<36°C pada <3bln","Kulit kebiruan"],tips:[{t:"Cek Suhu",d:"Raba dada, BUKAN tangan/kaki."},{t:"Lapisan",d:"Overheating LEBIH BAHAYA."}]},
-unknown:{id:"unknown",label:"Tdk Dikenali",labelEn:"Unknown",icon:"help",color:"#8E8E93",colorLight:"#F2F2F7",desc:"Pola tidak cocok kategori.",steps:[{n:1,a:"Checklist",d:"Lapar? Popok? Lelah? Suhu?",i:"file"},{n:2,a:"Periksa fisik",d:"Jari, ruam, bengkak.",i:"search"},{n:3,a:"Teknik menenangkan",d:"Skin-to-skin, 5S, white noise.",i:"heart"},{n:4,a:"Catat & konsultasi",d:"Kapan, berapa lama.",i:"file"}],warns:["Tangisan >3 jam","Kaku/lemas abnormal","Demam+muntah+diare","Insting salah — PERCAYA"],tips:[{t:"Checklist",d:"Popok-Lapar-Suhu-Posisi-Gas."},{t:"Ke Dokter",d:"Tangisan >3jam, demam, lemas."}]}};
+/* ======== LOCAL STORAGE HELPERS ======== */
+var LS={
+get:function(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}},
+set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+uid:function(){return”u_”+Math.random().toString(36).substr(2,9)+Date.now().toString(36);}
+};
 
-/* ==== AUDIO ENGINE ==== */
-function estimateF0(td,sr){var n=td.length,sig=new Float32Array(n);for(var i=0;i<n;i++)sig[i]=(td[i]-128)/128;var minL=Math.floor(sr/800),maxL=Math.floor(sr/100),bC=-1,bL=minL;for(var lag=minL;lag<Math.min(maxL,n/2);lag++){var c=0,n1=0,n2=0;for(var j=0;j<n-lag;j++){c+=sig[j]*sig[j+lag];n1+=sig[j]*sig[j];n2+=sig[j+lag]*sig[j+lag];}var nf=Math.sqrt(n1*n2);if(nf>0)c/=nf;if(c>bC){bC=c;bL=lag;}}return{f0:bC>0.3?Math.round(sr/bL):0,conf:bC};}
-function compJitter(td){var n=td.length,sig=new Float32Array(n);for(var i=0;i<n;i++)sig[i]=(td[i]-128)/128;var cx=[];for(var i=1;i<n;i++)if(sig[i-1]<0&&sig[i]>=0)cx.push(i);if(cx.length<4)return 0;var pr=[];for(var i=1;i<cx.length;i++)pr.push(cx[i]-cx[i-1]);var ap=pr.reduce(function(s,p){return s+p;},0)/pr.length;if(!ap)return 0;var js=0;for(var i=1;i<pr.length;i++)js+=Math.abs(pr[i]-pr[i-1]);return js/(pr.length-1)/ap;}
-function compShimmer(td){var n=td.length,sig=new Float32Array(n);for(var i=0;i<n;i++)sig[i]=Math.abs((td[i]-128)/128);var pk=[];for(var i=1;i<n-1;i++)if(sig[i]>sig[i-1]&&sig[i]>sig[i+1]&&sig[i]>0.05)pk.push(sig[i]);if(pk.length<4)return 0;var ap=pk.reduce(function(s,p){return s+p;},0)/pk.length;if(!ap)return 0;var ss=0;for(var i=1;i<pk.length;i++)ss+=Math.abs(pk[i]-pk[i-1]);return ss/(pk.length-1)/ap;}
-function compHNR(td,sr){var r=estimateF0(td,sr);if(!r.f0||r.conf<0.3)return 0;var n=td.length,sig=new Float32Array(n);for(var i=0;i<n;i++)sig[i]=(td[i]-128)/128;var pd=Math.round(sr/r.f0);if(!pd||pd>n/2)return 0;var hp=0,tp=0;for(var i=0;i<n-pd;i++){hp+=sig[i]*sig[i+pd];tp+=sig[i]*sig[i];}if(!tp)return 0;var rt=hp/tp;return rt>0&&rt<1?10*Math.log10(rt/(1-rt)):0;}
+/* ======== WHO GROWTH DATA (0-24mo, P3/P15/P50/P85/P97) ======== */
+var WHO_W_B=[[0,2.5,2.9,3.3,3.9,4.4],[1,3.4,3.9,4.5,5.1,5.8],[2,4.3,4.9,5.6,6.3,7.1],[3,5.0,5.7,6.4,7.2,8.0],[4,5.6,6.2,7.0,7.8,8.7],[5,6.0,6.7,7.5,8.4,9.3],[6,6.4,7.1,7.9,8.8,9.8],[7,6.7,7.4,8.3,9.2,10.3],[8,6.9,7.7,8.6,9.6,10.7],[9,7.1,7.9,8.9,9.9,11.0],[10,7.4,8.2,9.2,10.2,11.4],[11,7.6,8.4,9.4,10.5,11.7],[12,7.7,8.6,9.6,10.8,12.0],[15,8.3,9.2,10.3,11.5,12.8],[18,8.8,9.8,10.9,12.2,13.7],[21,9.2,10.3,11.5,12.9,14.5],[24,9.7,10.8,12.2,13.6,15.3]];
+var WHO_W_G=[[0,2.4,2.8,3.2,3.7,4.2],[1,3.2,3.6,4.2,4.8,5.5],[2,3.9,4.5,5.1,5.8,6.6],[3,4.5,5.2,5.8,6.6,7.5],[4,5.0,5.7,6.4,7.3,8.2],[5,5.4,6.1,6.9,7.8,8.8],[6,5.7,6.5,7.3,8.2,9.3],[7,6.0,6.8,7.6,8.6,9.8],[8,6.3,7.0,7.9,9.0,10.2],[9,6.5,7.3,8.2,9.3,10.5],[10,6.7,7.5,8.5,9.6,10.9],[11,6.9,7.7,8.7,9.9,11.2],[12,7.0,7.9,8.9,10.1,11.5],[15,7.6,8.5,9.6,10.9,12.4],[18,8.1,9.1,10.2,11.6,13.2],[21,8.6,9.6,10.9,12.3,14.0],[24,9.0,10.2,11.5,13.0,14.8]];
+var WHO_H_B=[[0,46.1,47.9,49.9,51.8,53.7],[1,50.8,52.8,54.7,56.7,58.6],[2,54.4,56.4,58.4,60.4,62.4],[3,57.3,59.4,61.4,63.5,65.5],[4,59.7,61.8,63.9,66.0,68.0],[5,61.7,63.8,65.9,68.0,70.1],[6,63.3,65.5,67.6,69.8,71.9],[7,64.8,67.0,69.2,71.3,73.5],[8,66.2,68.4,70.6,72.8,75.0],[9,67.5,69.7,72.0,74.2,76.5],[10,68.7,71.0,73.3,75.6,77.9],[11,69.9,72.2,74.5,76.9,79.2],[12,71.0,73.4,75.7,78.1,80.5],[15,74.1,76.6,79.1,81.7,84.2],[18,76.9,79.6,82.3,85.0,87.7],[21,79.4,82.3,85.1,88.0,90.9],[24,81.7,84.8,87.8,90.9,93.9]];
+var WHO_H_G=[[0,45.4,47.2,49.1,51.0,52.9],[1,49.8,51.7,53.7,55.6,57.6],[2,53.0,55.0,57.1,59.1,61.1],[3,55.6,57.7,59.8,61.9,64.0],[4,57.8,59.9,62.1,64.3,66.4],[5,59.6,61.8,64.0,66.2,68.5],[6,61.2,63.5,65.7,68.0,70.3],[7,62.7,65.0,67.3,69.6,71.9],[8,64.0,66.4,68.7,71.1,73.5],[9,65.3,67.7,70.1,72.6,75.0],[10,66.5,69.0,71.5,74.0,76.4],[11,67.7,70.3,72.8,75.3,77.8],[12,68.9,71.4,74.0,76.6,79.2],[15,72.0,74.8,77.5,80.2,83.0],[18,74.9,77.8,80.7,83.6,86.5],[21,77.5,80.6,83.7,86.7,89.8],[24,80.0,83.2,86.4,89.6,92.9]];
 
-function extractFeatures(an,sr){var fbc=an.frequencyBinCount,fd=new Uint8Array(fbc),td=new Uint8Array(an.fftSize);an.getByteFrequencyData(fd);an.getByteTimeDomainData(td);var mb=32,me=new Float32Array(mb),mf=sr/2;for(var m=0;m<mb;m++){var mL=2595*Math.log10(1+((m/mb)*mf)/700),mH=2595*Math.log10(1+(((m+1)/mb)*mf)/700),bL=Math.floor((700*(Math.pow(10,mL/2595)-1)/mf)*fbc),bH=Math.min(Math.ceil((700*(Math.pow(10,mH/2595)-1)/mf)*fbc),fbc-1),e=0,c=0;for(var b=bL;b<=bH;b++){e+=fd[b];c++;}me[m]=c>0?Math.log(e/c+1e-8):0;}var mxA=0,tA=0,zc=0;for(var i=0;i<td.length;i++){var a=Math.abs(td[i]-128);if(a>mxA)mxA=a;tA+=a;if(i>0&&((td[i]>=128)!==(td[i-1]>=128)))zc++;}var sc=0,tfe=0;for(var i=0;i<fbc;i++){sc+=i*fd[i];tfe+=fd[i];}sc=tfe>0?(sc/tfe)*(mf/fbc):0;var bw=mf/fbc,bass=0,lm=0,mid=0,hm=0,pres=0,bril=0;for(var i=0;i<fbc;i++){var f=i*bw;if(f<400)bass+=fd[i];else if(f<800)lm+=fd[i];else if(f<1500)mid+=fd[i];else if(f<2500)hm+=fd[i];else if(f<4000)pres+=fd[i];else bril+=fd[i];}var pitch=estimateF0(td,sr);return{melEnergies:Array.from(me),avgAmplitude:tA/td.length,maxAmplitude:mxA,zeroCrossingRate:zc/td.length,spectralCentroid:sc,totalEnergy:tfe,bassEnergy:bass,lowMidEnergy:lm,midEnergy:mid,highMidEnergy:hm,presenceEnergy:pres,brillianceEnergy:bril,f0:pitch.f0,jitter:compJitter(td),shimmer:compShimmer(td),hnr:compHNR(td,sr),timestamp:Date.now()};}
+function getWHO(gender){return{w:gender===“L”?WHO_W_B:WHO_W_G,h:gender===“L”?WHO_H_B:WHO_H_G};}
+function whoRow(data,mo){var best=data[0];for(var i=0;i<data.length;i++){if(data[i][0]<=mo)best=data[i];else break;}return best;}
+function percLabel(val,row){if(!row||!val)return”-”;if(val<=row[1])return”<P3”;if(val<=row[2])return”P3-15”;if(val<=row[3])return”P15-50”;if(val<=row[4])return”P50-85”;if(val<=row[5])return”P85-97”;return”>P97”;}
+function ageMo(bd){if(!bd)return 0;return Math.max(0,Math.floor((Date.now()-new Date(bd).getTime())/(1e3*60*60*24*30.44)));}
 
-function computeCV(a){if(a.length<2)return 1;var m=a.reduce(function(s,v){return s+v;},0)/a.length;if(!m)return 1;return Math.sqrt(a.reduce(function(s,v){return s+Math.pow(v-m,2);},0)/a.length)/m;}
-function detectBouts(fh){var bo=[],inB=false,bs=0;for(var i=0;i<fh.length;i++){var cry=fh[i].avgAmplitude>8;if(cry&&!inB){inB=true;bs=i;}else if(!cry&&inB){if(i-bs>=3){var sl=fh.slice(bs,i);bo.push({start:bs,end:i,dur:(i-bs)*0.2,avgAmp:sl.reduce(function(s,f){return s+f.avgAmplitude;},0)/sl.length,avgF0:sl.reduce(function(s,f){return s+(f.f0||0);},0)/sl.length});}inB=false;}}if(inB&&fh.length-bs>=3){var sl=fh.slice(bs);bo.push({start:bs,end:fh.length,dur:(fh.length-bs)*0.2,avgAmp:sl.reduce(function(s,f){return s+f.avgAmplitude;},0)/sl.length,avgF0:sl.reduce(function(s,f){return s+(f.f0||0);},0)/sl.length});}return bo;}
-function computeRhythm(bo){if(bo.length<3)return{score:0,pattern:"insufficient_data",boutCount:bo.length,avgBoutDur:0,avgGap:0};var du=bo.map(function(b){return b.dur;}),ga=[];for(var i=1;i<bo.length;i++)ga.push((bo[i].start-bo[i-1].end)*0.2);var rs=Math.max(0,1-(computeCV(du)+(ga.length>1?computeCV(ga):1))/2);return{score:+rs.toFixed(3),pattern:rs>0.7?"highly_rhythmic":rs>0.4?"semi_rhythmic":"irregular",boutCount:bo.length,avgBoutDur:+(du.reduce(function(s,d){return s+d;},0)/du.length).toFixed(2),avgGap:ga.length?+(ga.reduce(function(s,g){return s+g;},0)/ga.length).toFixed(2):0};}
-function analyzeEnv(fh){var n=fh.length;if(n<5)return{trend:"flat",peakPos:0.5,dynRange:0};var am=fh.map(function(f){return f.avgAmplitude;}),mx=Math.max.apply(null,am),mn=Math.min.apply(null,am),dr=mx-mn;var sX=0,sY=0,sXY=0,sX2=0;for(var i=0;i<n;i++){sX+=i;sY+=am[i];sXY+=i*am[i];sX2+=i*i;}var sl=(n*sXY-sX*sY)/(n*sX2-sX*sX);var tr="flat";if(sl>0.3)tr="rising";else if(sl<-0.3)tr="falling";else if(dr>mx*0.6)tr="fluctuating";return{trend:tr,peakPos:+(am.indexOf(mx)/(n-1)).toFixed(2),dynRange:+dr.toFixed(1)};}
+/* ======== CRY LABELS ======== */
+var CL={hungry:{l:“Lapar”,e:“Hungry”,ic:“bottle”,cl:”#FF9500”},belly_pain:{l:“Sakit Perut”,e:“Belly Pain”,ic:“activity”,cl:”#FF3B30”},burping:{l:“Bersendawa”,e:“Burping”,ic:“wind”,cl:”#34C759”},discomfort:{l:“Tidak Nyaman”,e:“Discomfort”,ic:“frown”,cl:”#FF9500”},tired:{l:“Mengantuk”,e:“Tired”,ic:“moon”,cl:”#AF52DE”},lonely:{l:“Butuh Perhatian”,e:“Lonely”,ic:“heart”,cl:”#007AFF”},scared:{l:“Kaget”,e:“Scared”,ic:“zap”,cl:”#FF3B30”},cold_hot:{l:“Suhu”,e:“Temperature”,ic:“thermometer”,cl:”#32ADE6”},unknown:{l:“Tidak Dikenali”,e:“Unknown”,ic:“help”,cl:”#8E8E93”}};
 
-function aggregate(fh){var n=fh.length;if(n<5)return null;var avg=function(k){return fh.reduce(function(s,f){return s+(f[k]||0);},0)/n;};var f0s=fh.map(function(f){return f.f0;}).filter(function(v){return v>0;});var mF0=f0s.length?f0s.reduce(function(s,v){return s+v;},0)/f0s.length:0;var f0CV=mF0>0?Math.sqrt(f0s.reduce(function(s,v){return s+Math.pow(v-mF0,2);},0)/(f0s.length||1))/mF0:0;var bo=detectBouts(fh),rh=computeRhythm(bo),env=analyzeEnv(fh);var tBE=avg("bassEnergy")+avg("lowMidEnergy")+avg("midEnergy")+avg("highMidEnergy")+avg("presenceEnergy")+avg("brillianceEnergy");
-return{pitch:{meanF0:+mF0.toFixed(1),maxF0:f0s.length?Math.max.apply(null,f0s):0,minF0:f0s.length?Math.min.apply(null,f0s):0,f0CV:+f0CV.toFixed(3),voicedR:+(f0s.length/n).toFixed(2)},vq:{jitter:+avg("jitter").toFixed(4),shimmer:+avg("shimmer").toFixed(4),hnr:+avg("hnr").toFixed(2)},rhythm:rh,intensity:{trend:env.trend,peakPos:env.peakPos,dynRange:env.dynRange,meanAmp:+avg("avgAmplitude").toFixed(1),maxAmp:Math.max.apply(null,fh.map(function(f){return f.maxAmplitude;}))},spectral:{bassR:tBE>0?+(avg("bassEnergy")/tBE).toFixed(3):0,midR:tBE>0?+(avg("midEnergy")/tBE).toFixed(3):0,presR:tBE>0?+(avg("presenceEnergy")/tBE).toFixed(3):0},temporal:{frames:n,dur:+(n*0.2).toFixed(1),cryDur:+bo.reduce(function(s,b){return s+b.dur;},0).toFixed(1),bouts:bo.length}};}
+/* ======== AUDIO ENGINE (compact) ======== */
+function estF0(td,sr){var n=td.length,s=new Float32Array(n);for(var i=0;i<n;i++)s[i]=(td[i]-128)/128;var mL=Math.floor(sr/800),xL=Math.floor(sr/100),bC=-1,bL=mL;for(var lag=mL;lag<Math.min(xL,n/2);lag++){var c=0,n1=0,n2=0;for(var j=0;j<n-lag;j++){c+=s[j]*s[j+lag];n1+=s[j]*s[j];n2+=s[j+lag]*s[j+lag];}var nf=Math.sqrt(n1*n2);if(nf>0)c/=nf;if(c>bC){bC=c;bL=lag;}}return{f0:bC>0.3?Math.round(sr/bL):0};}
+function cJit(td){var n=td.length,s=new Float32Array(n);for(var i=0;i<n;i++)s[i]=(td[i]-128)/128;var cx=[];for(var i=1;i<n;i++)if(s[i-1]<0&&s[i]>=0)cx.push(i);if(cx.length<4)return 0;var pr=[];for(var i=1;i<cx.length;i++)pr.push(cx[i]-cx[i-1]);var ap=pr.reduce(function(a,b){return a+b;},0)/pr.length;if(!ap)return 0;var js=0;for(var i=1;i<pr.length;i++)js+=Math.abs(pr[i]-pr[i-1]);return js/(pr.length-1)/ap;}
+function cHNR(td,sr){var r=estF0(td,sr);if(!r.f0)return 0;var n=td.length,s=new Float32Array(n);for(var i=0;i<n;i++)s[i]=(td[i]-128)/128;var pd=Math.round(sr/r.f0);if(!pd||pd>n/2)return 0;var hp=0,tp=0;for(var i=0;i<n-pd;i++){hp+=s[i]*s[i+pd];tp+=s[i]*s[i];}if(!tp)return 0;var rt=hp/tp;return rt>0&&rt<1?10*Math.log10(rt/(1-rt)):0;}
+function exF(an,sr){var fbc=an.frequencyBinCount,fd=new Uint8Array(fbc),td=new Uint8Array(an.fftSize);an.getByteFrequencyData(fd);an.getByteTimeDomainData(td);var mxA=0,tA=0;for(var i=0;i<td.length;i++){var a=Math.abs(td[i]-128);if(a>mxA)mxA=a;tA+=a;}var bw=(sr/2)/fbc,bass=0,mid=0,pres=0,tfe=0;for(var i=0;i<fbc;i++){var f=i*bw;tfe+=fd[i];if(f<400)bass+=fd[i];else if(f<1500)mid+=fd[i];else if(f<4000)pres+=fd[i];}var p=estF0(td,sr);return{avgAmp:tA/td.length,maxAmp:mxA,f0:p.f0,jitter:cJit(td),hnr:cHNR(td,sr),bassR:tfe>0?bass/tfe:0,midR:tfe>0?mid/tfe:0,presR:tfe>0?pres/tfe:0};}
+function cCV(a){if(a.length<2)return 1;var m=a.reduce(function(s,v){return s+v;},0)/a.length;if(!m)return 1;return Math.sqrt(a.reduce(function(s,v){return s+Math.pow(v-m,2);},0)/a.length)/m;}
+function analyze(fh){var n=fh.length;if(n<5)return null;var av=function(k){return fh.reduce(function(s,f){return s+(f[k]||0);},0)/n;};var f0s=fh.map(function(f){return f.f0;}).filter(function(v){return v>0;});var mF=f0s.length?f0s.reduce(function(s,v){return s+v;},0)/f0s.length:0;var fCV=mF>0?Math.sqrt(f0s.reduce(function(s,v){return s+Math.pow(v-mF,2);},0)/(f0s.length||1))/mF:0;
+// Bout detection
+var bo=[],inB=false,bs=0;for(var i=0;i<n;i++){if(fh[i].avgAmp>8&&!inB){inB=true;bs=i;}else if(fh[i].avgAmp<=8&&inB){if(i-bs>=3)bo.push({s:bs,e:i,d:(i-bs)*.2});inB=false;}}if(inB&&n-bs>=3)bo.push({s:bs,e:n,d:(n-bs)*.2});
+var rhS=0,rhP=“insufficient”;if(bo.length>=3){var du=bo.map(function(b){return b.d;}),ga=[];for(var i=1;i<bo.length;i++)ga.push((bo[i].s-bo[i-1].e)*.2);rhS=Math.max(0,1-(cCV(du)+(ga.length>1?cCV(ga):1))/2);rhP=rhS>0.7?“highly_rhythmic”:rhS>0.4?“semi_rhythmic”:“irregular”;}
+// Envelope
+var amps=fh.map(function(f){return f.avgAmp;}),sX=0,sY=0,sXY=0,sX2=0;for(var i=0;i<n;i++){sX+=i;sY+=amps[i];sXY+=i*amps[i];sX2+=i*i;}var sl=(n*sXY-sX*sY)/(n*sX2-sX*sX),tr=“flat”;if(sl>0.3)tr=“rising”;else if(sl<-0.3)tr=“falling”;var mx=Math.max.apply(null,amps),mn=Math.min.apply(null,amps);if(mx-mn>mx*0.6&&tr===“flat”)tr=“fluctuating”;var pkP=amps.indexOf(mx)/(n-1);
+return{pitch:{meanF0:+mF.toFixed(1),fCV:+fCV.toFixed(3)},vq:{jitter:+av(“jitter”).toFixed(4),hnr:+av(“hnr”).toFixed(2)},rhythm:{score:+rhS.toFixed(3),pattern:rhP,bouts:bo.length,avgDur:bo.length?+(bo.reduce(function(s,b){return s+b.d;},0)/bo.length).toFixed(2):0,avgGap:bo.length>1?+((bo.slice(1).reduce(function(s,b,i){return s+(bo[i+1].s-bo[i].e)*.2;},0))/(bo.length-1)).toFixed(2):0},intensity:{trend:tr,pkPos:+pkP.toFixed(2),meanAmp:+av(“avgAmp”).toFixed(1),maxAmp:Math.max.apply(null,fh.map(function(f){return f.maxAmp;}))},spectral:{bassR:+av(“bassR”).toFixed(3),midR:+av(“midR”).toFixed(3),presR:+av(“presR”).toFixed(3)},temporal:{frames:n,dur:+(n*.2).toFixed(1),bouts:bo.length}};}
 
-function ruleClassify(ag){var sc={hungry:0,belly_pain:0,burping:0,discomfort:0,tired:0,lonely:0,scared:0,cold_hot:0,unknown:0};var p=ag.pitch,vq=ag.vq,rh=ag.rhythm,it=ag.intensity,sp=ag.spectral;
-if(rh.score>0.4)sc.hungry+=20;if(rh.score>0.6)sc.hungry+=15;if(p.meanF0>250&&p.meanF0<500)sc.hungry+=15;if(it.trend==="rising")sc.hungry+=20;if(vq.hnr>5)sc.hungry+=10;if(vq.jitter<0.08)sc.hungry+=10;if(rh.boutCount>=3)sc.hungry+=10;
-if(p.meanF0>450)sc.belly_pain+=20;if(p.meanF0>550)sc.belly_pain+=10;if(it.meanAmp>30)sc.belly_pain+=15;if(vq.jitter>0.1)sc.belly_pain+=15;if(vq.hnr<3)sc.belly_pain+=10;if(sp.presR>0.15)sc.belly_pain+=10;
-if(rh.avgBoutDur<1.5&&rh.avgBoutDur>0)sc.burping+=20;if(p.meanF0<350&&p.meanF0>0)sc.burping+=15;if(it.meanAmp<20)sc.burping+=10;if(sp.bassR>0.3)sc.burping+=15;if(vq.shimmer>0.15)sc.burping+=10;
-if(it.trend==="fluctuating")sc.discomfort+=20;if(rh.pattern==="semi_rhythmic")sc.discomfort+=15;if(p.f0CV>0.2&&p.f0CV<0.5)sc.discomfort+=15;
-if(it.trend==="falling")sc.tired+=25;if(it.meanAmp<18)sc.tired+=15;if(p.meanF0>200&&p.meanF0<400)sc.tired+=10;if(vq.hnr>4)sc.tired+=10;
-if(it.meanAmp<22)sc.lonely+=15;if(rh.avgGap>2)sc.lonely+=20;if(rh.boutCount>=2&&rh.boutCount<=5)sc.lonely+=10;
-if(it.peakPos<0.25)sc.scared+=25;if(p.meanF0>500)sc.scared+=15;if(it.maxAmp>50)sc.scared+=15;if(it.dynRange>30)sc.scared+=15;
-if(it.trend==="flat")sc.cold_hot+=20;if(rh.score>0.3&&rh.score<0.6)sc.cold_hot+=15;if(p.f0CV<0.15)sc.cold_hot+=15;
-var mx=Math.max.apply(null,Object.values(sc))||1;return Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return{class:e[0],confidence:Math.round(e[1]/mx*100)};});}
+function ruleClassify(ag){var sc={hungry:0,belly_pain:0,burping:0,discomfort:0,tired:0,lonely:0,scared:0,cold_hot:0,unknown:0},p=ag.pitch,vq=ag.vq,rh=ag.rhythm,it=ag.intensity,sp=ag.spectral;
+if(rh.score>0.4)sc.hungry+=20;if(rh.score>0.6)sc.hungry+=15;if(p.meanF0>250&&p.meanF0<500)sc.hungry+=15;if(it.trend===“rising”)sc.hungry+=20;if(vq.hnr>5)sc.hungry+=10;if(vq.jitter<0.08)sc.hungry+=10;
+if(p.meanF0>450)sc.belly_pain+=20;if(p.meanF0>550)sc.belly_pain+=10;if(it.meanAmp>30)sc.belly_pain+=15;if(vq.jitter>0.1)sc.belly_pain+=15;if(vq.hnr<3)sc.belly_pain+=10;
+if(rh.avgDur<1.5&&rh.avgDur>0)sc.burping+=20;if(p.meanF0<350&&p.meanF0>0)sc.burping+=15;if(it.meanAmp<20)sc.burping+=10;if(sp.bassR>0.3)sc.burping+=15;
+if(it.trend===“fluctuating”)sc.discomfort+=20;if(rh.pattern===“semi_rhythmic”)sc.discomfort+=15;if(p.fCV>0.2&&p.fCV<0.5)sc.discomfort+=15;
+if(it.trend===“falling”)sc.tired+=25;if(it.meanAmp<18)sc.tired+=15;if(p.meanF0>200&&p.meanF0<400)sc.tired+=10;if(vq.hnr>4)sc.tired+=10;
+if(it.meanAmp<22)sc.lonely+=15;if(rh.avgGap>2)sc.lonely+=20;
+if(it.pkPos<0.25)sc.scared+=25;if(p.meanF0>500)sc.scared+=15;if(it.maxAmp>50)sc.scared+=15;
+if(it.trend===“flat”)sc.cold_hot+=20;if(p.fCV<0.15)sc.cold_hot+=15;
+var mx=Math.max.apply(null,Object.values(sc))||1;return Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return{cls:e[0],conf:Math.round(e[1]/mx*100)};});}
 
-function classify(fh){return new Promise(function(resolve,reject){if(fh.length<5){reject(new Error("Data tidak cukup"));return;}var ag=aggregate(fh);if(!ag){reject(new Error("Gagal"));return;}var rb=ruleClassify(ag);
-if(!window.__GROQ_KEY){var topCls=rb[0]?rb[0].class:"unknown";var dbI=CRY_DB[topCls]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB, pola "+ag.rhythm.pattern;return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbI.desc+" "+dbI.steps[0].a+": "+dbI.steps[0].d+" "+dbI.steps[1].a+": "+dbI.steps[1].d,urgency:ag.pitch.meanF0>550?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});return;}
-var sys='Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil pre-klasifikasi. Tugas Anda: 1) Evaluasi apakah kelas prediksi cocok dengan fitur akustik. 2) Tulis analisis akustik NYATA berdasarkan data (contoh: "Frekuensi dasar terdeteksi pada 283 Hz dengan jitter tinggi 87.8% menunjukkan tangisan tidak stabil, khas pola kelelahan. HNR 5.87 dB menandakan komponen noise signifikan."). 3) Tulis saran NYATA dan spesifik (contoh: "Coba redupkan lampu dan ayun bayi perlahan. Jika sudah lebih dari 1.5 jam sejak tidur terakhir, kemungkinan besar bayi butuh tidur."). JANGAN tulis placeholder seperti "2 kalimat" — tulis konten sesungguhnya. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis akustik nyata dalam bahasa Indonesia","contextual_advice":"tulis saran praktis nyata dalam bahasa Indonesia","urgency":"low|medium|high"} Maksimal 3 prediksi.';
-var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
-fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:"Data akustik teragregasi:\n"+JSON.stringify(ag,null,1)+"\n\nHasil pre-klasifikasi rule-based:\n"+JSON.stringify(rb,null,1)+"\n\nBerikan analisis dan saran yang spesifik berdasarkan data di atas."}],response_format:{type:"json_object"},temperature:0.4,max_tokens:800}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag};resolve(p);}).catch(function(e){clearTimeout(tid);var topClass=rb[0]?rb[0].class:"unknown";var dbItem=CRY_DB[topClass]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="Analisis rule-based: F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB";return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbItem.desc+" "+dbItem.steps[0].a+": "+dbItem.steps[0].d,urgency:ag.pitch.meanF0>550&&ag.intensity.maxAmp>50?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});});});}
+/* ======== GROQ API ======== */
+function groq(sys,usr,json){return new Promise(function(res){
+if(!window.__GROQ_KEY){res(null);return;}
+var c=new AbortController(),t=setTimeout(function(){c.abort();},15000);
+var body={model:“llama-3.3-70b-versatile”,messages:[{role:“system”,content:sys},{role:“user”,content:usr}],temperature:0.4,max_tokens:700};
+if(json)body.response_format={type:“json_object”};
+fetch(“https://api.groq.com/openai/v1/chat/completions”,{method:“POST”,headers:{“Content-Type”:“application/json”,“Authorization”:“Bearer “+window.__GROQ_KEY},body:JSON.stringify(body),signal:c.signal}).then(function(r){clearTimeout(t);return r.json();}).then(function(d){if(d.error){res(null);return;}var txt=d.choices[0].message.content;if(json){try{res(JSON.parse(txt));}catch(e){res(null);}}else res(txt);}).catch(function(){clearTimeout(t);res(null);});});}
 
-function Spectrogram(props){var ref=useRef(null);useEffect(function(){if(!ref.current||!props.data.length)return;var c=ref.current,x=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);var W=r.width,H=r.height,n=props.data.length,mb=props.data[0].melEnergies.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;props.data.forEach(function(f){f.melEnergies.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=props.data[f].melEnergies,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle="rgba(10,132,255,"+Math.pow(nm,0.7)*0.8+")";x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[props.data]);
-return html`<div style=${{position:"relative"}}><canvas ref=${ref} style=${{width:"100%",height:100,borderRadius:16,border:"1px solid rgba(0,0,0,0.04)",background:"rgba(255,255,255,0.4)"}}/>${props.rec&&html`<div style=${{position:"absolute",top:8,right:10,background:"#FF453A",borderRadius:20,padding:"4px 12px",fontSize:11,color:"#FFF",fontWeight:700,animation:"blink 1.5s infinite",display:"flex",alignItems:"center",gap:4}}><div style=${{width:6,height:6,borderRadius:3,background:"#FFF"}}/>REC</div>`}</div>`;}
-
-function Wave(props){var ref=useRef(null),anim=useRef(null);useEffect(function(){if(!props.rec||!props.aRef.current||!ref.current)return;var c=ref.current,x=c.getContext("2d"),an=props.aRef.current,da=new Uint8Array(an.fftSize);function draw(){anim.current=requestAnimationFrame(draw);an.getByteTimeDomainData(da);var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);var W=r.width,H=r.height;x.clearRect(0,0,W,H);x.lineWidth=2.5;var g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,"#0A84FF");g.addColorStop(0.5,"#BF5AF2");g.addColorStop(1,"#FF375F");x.strokeStyle=g;x.beginPath();var sw=W/da.length,px=0;for(var i=0;i<da.length;i++){var v=da[i]/128,y=(v*H)/2;i===0?x.moveTo(px,y):x.lineTo(px,y);px+=sw;}x.stroke();}draw();return function(){cancelAnimationFrame(anim.current);};},[props.rec,props.aRef]);
-return html`<canvas ref=${ref} style=${{width:"100%",height:50,borderRadius:16,border:"1px solid rgba(0,0,0,0.04)",background:"rgba(255,255,255,0.4)"}}/>`;};
-
-function DiagPanel(props){var _s=useState(false),open=_s[0],setOpen=_s[1];if(!props.diag||!props.diag.ag)return null;var ag=props.diag.ag;
-return html`<div className="gl" style=${{overflow:"hidden",marginTop:6}}><button onClick=${function(){setOpen(!open);}} style=${{width:"100%",padding:"14px 20px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit"}}><${Icon} name="bar" size=${18} color="#8E8E93"/><span style=${{fontSize:14,fontWeight:600,color:"#48484A",flex:1,textAlign:"left"}}>Diagnostik Akustik</span><span style=${{fontSize:12,color:"#C7C7CC",transform:open?"rotate(90deg)":"none",transition:"0.2s"}}>▶</span></button>
-${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
-<div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>${[["F0",ag.pitch.meanF0+" Hz"],["Jitter",(ag.vq.jitter*100).toFixed(1)+"%"],["HNR",ag.vq.hnr+" dB"]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
-<div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>${[["Ritme",(ag.rhythm.score*100).toFixed(0)+"%"],["Pola",ag.rhythm.pattern],["Bout",ag.rhythm.boutCount+"x"],["Intensitas",ag.intensity.trend]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
-${props.diag.fallback&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:12,color:"#FF9F0A",fontWeight:600}}>Fallback: Rule-based tanpa LLM</div>`}
-</div>`}</div>`;}
-
-function chatWithAI(question,context){
-return new Promise(function(resolve){
-if(!window.__GROQ_KEY){resolve("API Key belum diatur. Silakan atur API Key Groq terlebih dahulu.");return;}
-var sys="Anda adalah dokter anak AI yang ramah dan informatif. Anda baru saja menganalisis tangisan bayi dengan hasil berikut. Jawab pertanyaan orang tua dalam bahasa Indonesia dengan jelas, praktis, dan empatik. Berikan informasi medis yang akurat. Jika pertanyaan di luar keahlian, sarankan konsultasi dokter. JANGAN gunakan markdown/formatting — tulis paragraf biasa saja. Batasi jawaban maksimal 3-4 paragraf.";
-var contextMsg="KONTEKS HASIL ANALISIS TANGISAN:\n"+JSON.stringify(context,null,1);
-var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
-fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:contextMsg+"\n\nPERTANYAAN ORANG TUA: "+question}],temperature:0.5,max_tokens:600}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);resolve(d.choices[0].message.content);}).catch(function(e){clearTimeout(tid);resolve("Maaf, gagal menghubungi AI: "+(e.message||"timeout")+". Coba lagi.");});});
+/* ======== GROWTH CHART CANVAS ======== */
+function GChart(p){var ref=useRef(null);
+useEffect(function(){if(!ref.current)return;var c=ref.current,ctx=c.getContext(“2d”),dpr=window.devicePixelRatio||1,rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=rect.height*dpr;ctx.scale(dpr,dpr);var W=rect.width,H=rect.height;ctx.clearRect(0,0,W,H);
+var whoD=p.data,maxMo=Math.min(ageMo(p.bd)+6,24),pad={t:16,r:30,b:28,l:36},cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+var allV=whoD.filter(function(r){return r[0]<=maxMo;}),minV=Math.min.apply(null,allV.map(function(r){return r[1];}))*.95,maxV=Math.max.apply(null,allV.map(function(r){return r[5];}))*1.05;
+function x(mo){return pad.l+(mo/maxMo)*cW;}function y(v){return pad.t+(1-(v-minV)/(maxV-minV))*cH;}
+// WHO bands
+[[1,5,“rgba(0,122,255,0.06)”],[2,4,“rgba(0,122,255,0.08)”]].forEach(function(b){ctx.fillStyle=b[2];ctx.beginPath();var f=true;allV.forEach(function(r){var px=x(r[0]),py=y(r[b[0]]);f?ctx.moveTo(px,py):ctx.lineTo(px,py);f=false;});allV.slice().reverse().forEach(function(r){ctx.lineTo(x(r[0]),y(r[b[1]]));});ctx.closePath();ctx.fill();});
+// P50
+ctx.strokeStyle=“rgba(0,122,255,0.35)”;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();allV.forEach(function(r,i){i===0?ctx.moveTo(x(r[0]),y(r[3])):ctx.lineTo(x(r[0]),y(r[3]));});ctx.stroke();ctx.setLineDash([]);
+// Labels
+ctx.font=“bold 8px -apple-system”;ctx.fillStyle=“rgba(0,122,255,0.5)”;ctx.textAlign=“left”;var lr=allV[allV.length-1];
+[“P3”,“P50”,“P97”].forEach(function(l,i){var vi=[lr[1],lr[3],lr[5]][i];ctx.fillText(l,x(lr[0])+4,y(vi)+3);});
+// Grid
+ctx.font=“9px -apple-system”;ctx.fillStyle=”#AEAEB2”;ctx.textAlign=“center”;
+for(var mo=0;mo<=maxMo;mo+=3){ctx.strokeStyle=“rgba(0,0,0,0.04)”;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x(mo),pad.t);ctx.lineTo(x(mo),H-pad.b);ctx.stroke();ctx.fillText(mo+“bl”,x(mo),H-pad.b+14);}
+// Data points
+var pts=(p.entries||[]).filter(function(e){return p.type===“w”?e.w:e.h;}).slice().reverse();
+if(pts.length){ctx.strokeStyle=”#FF2D55”;ctx.lineWidth=2.5;ctx.lineJoin=“round”;ctx.beginPath();pts.forEach(function(e,i){var eMo=e.mo||0,v=p.type===“w”?e.w:e.h;if(eMo<=maxMo){var px=x(eMo),py=y(v);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}});ctx.stroke();
+pts.forEach(function(e){var eMo=e.mo||0,v=p.type===“w”?e.w:e.h;if(eMo<=maxMo){ctx.beginPath();ctx.arc(x(eMo),y(v),4,0,Math.PI*2);ctx.fillStyle=”#FF2D55”;ctx.fill();ctx.strokeStyle=”#FFF”;ctx.lineWidth=2;ctx.stroke();}});}
+},[p.entries,p.data]);
+return h`<canvas ref=${ref} style=${{width:"100%",height:180,borderRadius:16,background:"rgba(255,255,255,0.5)",border:"1px solid rgba(0,0,0,0.04)"}}/>`;
 }
 
-function FollowUpChat(props){
-var _msgs=useState([]),msgs=_msgs[0],setMsgs=_msgs[1];
-var _inp=useState(""),inp=_inp[0],setInp=_inp[1];
-var _loading=useState(false),loading=_loading[0],setLoading=_loading[1];
-var _open=useState(false),open=_open[0],setOpen=_open[1];
-var scrollRef=useRef(null);
+/* ======== MAIN APP ======== */
+function App(){
+var _tab=useState(“home”),tab=_tab[0],setTab=_tab[1];
+var _babies=useState(LS.get(“babies”,[])),babies=_babies[0],setBabies=_babies[1];
+var _selId=useState(LS.get(“selBabyId”,null)),selId=_selId[0],setSelId=_selId[1];
+var selBaby=babies.find(function(b){return b.id===selId;})||null;
+function saveBabies(list){setBabies(list);LS.set(“babies”,list);}
+function selectBaby(id){setSelId(id);LS.set(“selBabyId”,id);}
 
-var quickQs=[
-"Apa ciri khas tangisan lapar vs mengantuk?",
-"Kapan harus ke dokter?",
-"Bagaimana teknik menenangkan yang efektif?",
-"Apakah tangisan ini normal untuk usia bayi?"
-];
+useEffect(function(){var gk=localStorage.getItem(“groq_key”);if(gk)window.__GROQ_KEY=gk;},[]);
 
-function send(q){
-var question=q||inp.trim();if(!question||loading)return;
-setInp("");setLoading(true);
-setMsgs(function(prev){return prev.concat([{role:"user",text:question}]);});
-var ctx={predictions:props.results,analysis:props.aiAn,advice:props.aiAd,diagnostics:props.diag?props.diag.ag:null};
-chatWithAI(question,ctx).then(function(answer){setLoading(false);setMsgs(function(prev){return prev.concat([{role:"ai",text:answer}]);});
-setTimeout(function(){if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;},100);
-});
+/* –––– HOME TAB –––– */
+function HomeTab(){
+var _add=useState(false),add=_add[0],setAdd=_add[1];
+var _nm=useState(””),nm=_nm[0],setNm=_nm[1];
+var _bd=useState(””),bd=_bd[0],setBd=_bd[1];
+var _gn=useState(“L”),gn=_gn[0],setGn=_gn[1];
+var _bw=useState(””),bw=_bw[0],setBw=_bw[1];
+var _bh=useState(””),bh=_bh[0],setBh=_bh[1];
+var _gkv=useState(window.__GROQ_KEY||””),gkv=*gkv[0],setGkv=*gkv[1];
+function addBaby(){if(!nm.trim()||!bd)return;var nb={id:LS.uid(),name:nm.trim(),bd:bd,gender:gn,bw:parseFloat(bw)||0,bh:parseFloat(bh)||0};var list=babies.concat([nb]);saveBabies(list);selectBaby(nb.id);setAdd(false);setNm(””);setBd(””);setBw(””);setBh(””);}
+function delBaby(id){if(!confirm(“Hapus bayi ini dan semua datanya?”))return;saveBabies(babies.filter(function(b){return b.id!==id;}));localStorage.removeItem(“sessions*”+id);localStorage.removeItem(“growth*”+id);if(selId===id)selectBaby(null);}
+
+return h`<div class=“page” style=${{animation:“fade .5s”}}>
+<div style=${{marginBottom:28}}>
+<h1 style=${{fontSize:30,fontWeight:800,letterSpacing:”-1px”,lineHeight:1.15}}>BabyCare</h1>
+<p style=${{color:“var(–tx2)”,fontSize:14,marginTop:6}}>Monitor tumbuh kembang & analisis tangisan</p>
+</div>
+
+```
+${babies.map(function(b){var age=ageMo(b.bd),sel=selId===b.id;
+return h`<div key=${b.id} class="card" onClick=${function(){selectBaby(b.id);}} style=${{padding:"16px 18px",marginBottom:10,cursor:"pointer",border:sel?"2px solid var(--blue)":"1px solid var(--card-b)",transition:"border .2s"}}>
+  <div style=${{display:"flex",alignItems:"center",gap:14}}>
+    <div style=${{width:48,height:48,borderRadius:16,background:b.gender==="L"?"rgba(0,122,255,0.08)":"rgba(255,45,85,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:700,color:b.gender==="L"?"var(--blue)":"var(--pink)"}}>${b.name.charAt(0).toUpperCase()}</div>
+    <div style=${{flex:1,minWidth:0}}>
+      <div style=${{fontWeight:700,fontSize:16}}>${b.name}</div>
+      <div style=${{fontSize:13,color:"var(--tx2)",marginTop:2}}>${age} bulan · ${b.gender==="L"?"Laki-laki":"Perempuan"}</div>
+    </div>
+    ${sel&&h`<div style=${{width:10,height:10,borderRadius:5,background:"var(--blue)"}}/>`}
+    <button onClick=${function(e){e.stopPropagation();delBaby(b.id);}} style=${{background:"none",border:"none",padding:6,color:"var(--tx3)"}}><${Ic} n="trash" s=${16}/></button>
+  </div>
+</div>`;
+})}
+
+${!add?h`<button onClick=${function(){setAdd(true);}} class="btn btn-s" style=${{marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><${Ic} n="plus" s=${18} c="var(--blue)"/>Tambah Bayi</button>`:h`<div class="card" style=${{padding:20,marginTop:8,animation:"up .3s"}}>
+  <div style=${{fontWeight:700,fontSize:17,marginBottom:16}}>Profil Bayi Baru</div>
+  <input class="inp" placeholder="Nama bayi" value=${nm} onInput=${function(e){setNm(e.target.value);}} style=${{marginBottom:10}}/>
+  <input class="inp" type="date" value=${bd} onInput=${function(e){setBd(e.target.value);}} style=${{marginBottom:10}}/>
+  <div style=${{display:"flex",gap:8,marginBottom:10}}>
+    ${["L","P"].map(function(g){return h`<button key=${g} onClick=${function(){setGn(g);}} class="btn" style=${{flex:1,padding:12,background:gn===g?(g==="L"?"rgba(0,122,255,0.1)":"rgba(255,45,85,0.1)"):"rgba(0,0,0,0.03)",color:gn===g?(g==="L"?"var(--blue)":"var(--pink)"):"var(--tx3)",border:"1px solid "+(gn===g?(g==="L"?"rgba(0,122,255,0.2)":"rgba(255,45,85,0.2)"):"rgba(0,0,0,0.06)"),fontSize:14}}>${g==="L"?"Laki-laki":"Perempuan"}</button>`;})}
+  </div>
+  <div style=${{display:"flex",gap:8,marginBottom:14}}>
+    <input class="inp" type="number" step="0.1" placeholder="BB lahir (kg)" value=${bw} onInput=${function(e){setBw(e.target.value);}}/>
+    <input class="inp" type="number" step="0.1" placeholder="PB lahir (cm)" value=${bh} onInput=${function(e){setBh(e.target.value);}}/>
+  </div>
+  <div style=${{display:"flex",gap:8}}>
+    <button onClick=${function(){setAdd(false);}} class="btn btn-s" style=${{flex:1}}>Batal</button>
+    <button onClick=${addBaby} class="btn btn-p" style=${{flex:1}}>Simpan</button>
+  </div>
+</div>`}
+
+<div style=${{marginTop:28}}>
+  <div class="section-title">Groq API Key</div>
+  <input class="inp" type="password" placeholder="gsk_..." value=${gkv} onInput=${function(e){var v=e.target.value.trim();setGkv(v);window.__GROQ_KEY=v;localStorage.setItem("groq_key",v);}} style=${{fontSize:13}}/>
+  <p style=${{fontSize:11,color:"var(--tx3)",marginTop:6}}>Diperlukan untuk AI analisis tangisan & rekomendasi pertumbuhan</p>
+</div>
+```
+
+  </div>`;
 }
 
-var suggestionsToShow=msgs.length===0?quickQs:[];
+/* –––– CRY ANALYZER TAB –––– */
+function CryTab(){
+if(!selBaby)return h`<div class="page" style=${{display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"}}><div><${Ic} n="baby" s=${48} c="var(--tx3)" w=${1.3}/><p style=${{color:"var(--tx3)",marginTop:12,fontSize:15}}>Pilih bayi di tab Home</p></div></div>`;
+var _ph=useState(“idle”),ph=_ph[0],setPh=_ph[1];
+var _el=useState(0),el=_el[0],setEl=_el[1];
+var _res=useState(null),res=_res[0],setRes=_res[1];
+var _anl=useState(””),anl=_anl[0],setAnl=_anl[1];
+var _adv=useState(””),adv=_adv[0],setAdv=_adv[1];
+var _urg=useState(“low”),urg=_urg[0],setUrg=_urg[1];
+var _diag=useState(null),diag=_diag[0],setDiag=_diag[1];
+var _err=useState(null),err=_err[0],setErr=_err[1];
+var _chat=useState([]),chat=_chat[0],setChat=_chat[1];
+var _ci=useState(””),ci=_ci[0],setCi=_ci[1];
+var _cl=useState(false),chatLoading=_cl[0],setCl=_cl[1];
+var _showChat=useState(false),showChat=_showChat[0],setShowChat=_showChat[1];
+var msR=useRef(null),acR=useRef(null),anR=useRef(null),fhR=useRef([]),tmR=useRef(null),clR=useRef(null),phR=useRef(“idle”);
+useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();};},[]);
 
-return html`<div className="gl" style=${{overflow:"hidden",marginTop:14}}>
-<button onClick=${function(){setOpen(!open);}} style=${{width:"100%",padding:"16px 20px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"inherit"}}>
-<div style=${{width:36,height:36,borderRadius:12,background:"rgba(50,215,75,0.12)",display:"flex",alignItems:"center",justifyContent:"center",color:"#32D74B"}}><${Icon} name="help" size=${20}/></div>
-<div style=${{flex:1,textAlign:"left"}}><div style=${{fontWeight:600,fontSize:15,color:"#1C1C1E"}}>Tanya AI Lanjutan</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>Tanyakan tentang gejala, penanganan, dll</div></div>
-<span style=${{fontSize:12,color:"#C7C7CC",transform:open?"rotate(90deg)":"none",transition:"0.2s"}}>▶</span>
-</button>
+function start(){setErr(null);setRes(null);setAnl(””);setAdv(””);setDiag(null);setChat([]);fhR.current=[];
+navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;var src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0.7;src.connect(an);anR.current=an;setPh(“rec”);phR.current=“rec”;setEl(0);tmR.current=setInterval(function(){setEl(function(e){return e+1;});},1000);clR.current=setInterval(function(){var f=exF(an,ac.sampleRate);if(f.avgAmp>2)fhR.current.push(f);},200);}).catch(function(e){setErr(e.name===“NotAllowedError”?“Izin mikrofon ditolak. Buka Pengaturan browser > Mikrofon.”:“Error: “+e.message);});}
 
-${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
+function stop(){if(phR.current!==“rec”)return;phR.current=“anl”;clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();setPh(“anl”);
+if(fhR.current.length<5){setErr(“Data tidak cukup. Rekam minimal 3 detik dengan tangisan jelas.”);setPh(“idle”);phR.current=“idle”;return;}
+var ag=analyze(fhR.current);if(!ag){setErr(“Gagal menganalisis audio.”);setPh(“idle”);phR.current=“idle”;return;}
+var rb=ruleClassify(ag);setDiag(ag);
+var age=ageMo(selBaby.bd);
+groq(‘Anda dokter anak AI. Analisis tangisan bayi usia ‘+age+’ bulan. Tulis analisis dan saran NYATA berdasarkan data akustik. JANGAN placeholder. Output JSON: {“predictions”:[{“cls”:“hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown”,“conf”:0-100,“evidence”:”…”}],“analysis”:“analisis nyata bahasa Indonesia”,“advice”:“saran nyata bahasa Indonesia”,“urgency”:“low|medium|high”}’,
+“Akustik:\n”+JSON.stringify(ag,null,1)+”\nRule-based:\n”+JSON.stringify(rb,null,1),true).then(function(r){
+var preds=rb,anlT=””,advT=””,urgT=“low”;
+if(r&&r.predictions){preds=r.predictions;anlT=r.analysis||””;advT=r.advice||r.contextual_advice||””;urgT=r.urgency||“low”;}else{
+var topC=rb[0].cls;anlT=“F0 rata-rata “+ag.pitch.meanF0+” Hz, pola “+ag.rhythm.pattern+”, intensitas “+ag.intensity.trend+”. Jitter “+(ag.vq.jitter*100).toFixed(1)+”%, HNR “+ag.vq.hnr+” dB.”;advT=“Hasil analisis rule-based. Perhatikan respons bayi dan coba teknik menenangkan yang sesuai.”;urgT=ag.intensity.meanAmp>30?“medium”:“low”;
+preds=rb.map(function(r){return{cls:r.cls,conf:r.conf,evidence:“F0=”+ag.pitch.meanF0+“Hz, “+ag.rhythm.pattern};});}
+setRes(preds);setAnl(anlT);setAdv(advT);setUrg(urgT);
+// Save session
+var sessions=LS.get(“sessions_”+selBaby.id,[]);sessions.unshift({ts:Date.now(),preds:preds.slice(0,2),anl:anlT,adv:advT,urg:urgT,diag:{f0:ag.pitch.meanF0,jitter:ag.vq.jitter,hnr:ag.vq.hnr,rhythm:ag.rhythm.pattern,trend:ag.intensity.trend}});if(sessions.length>50)sessions=sessions.slice(0,50);LS.set(“sessions_”+selBaby.id,sessions);
+setPh(“done”);phR.current=“done”;
+});}
 
-${suggestionsToShow.length>0&&html`<div style=${{marginBottom:14}}>
-<div style=${{fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>Pertanyaan Cepat</div>
-<div style=${{display:"flex",flexWrap:"wrap",gap:8}}>
-${suggestionsToShow.map(function(q,i){return html`<button key=${i} onClick=${function(){send(q);}} style=${{background:"rgba(50,215,75,0.08)",border:"1px solid rgba(50,215,75,0.2)",borderRadius:14,padding:"8px 14px",fontSize:13,fontWeight:500,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.3}}>${q}</button>`;})}
+function reset(){setPh(“idle”);phR.current=“idle”;setRes(null);setAnl(””);setAdv(””);setEl(0);setErr(null);setDiag(null);setChat([]);setShowChat(false);}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,“0”)+”:”+String(s%60).padStart(2,“0”);}
+
+function sendChat(q){var question=q||ci.trim();if(!question||chatLoading)return;setCi(””);setCl(true);setChat(function(p){return p.concat([{r:“u”,t:question}]);});
+groq(“Anda dokter anak AI yang ramah. Jawab pertanyaan orang tua tentang tangisan bayi berdasarkan konteks hasil analisis. Bahasa Indonesia, praktis, empatik. Maks 2 paragraf. TANPA markdown.”,
+“Konteks: bayi “+selBaby.name+” usia “+ageMo(selBaby.bd)+” bulan. Hasil analisis tangisan: “+JSON.stringify({preds:res,anl:anl,diag:diag})+”\n\nPertanyaan: “+question).then(function(a){setCl(false);setChat(function(p){return p.concat([{r:“a”,t:a||“Maaf, gagal menghubungi AI.”}]);});});}
+
+var urgMap={high:{bg:“rgba(255,59,48,0.08)”,cl:“var(–red)”,tx:“Tinggi — Pertimbangkan ke dokter”},medium:{bg:“rgba(255,149,0,0.08)”,cl:“var(–orange)”,tx:“Sedang — Pantau respons bayi”},low:{bg:“rgba(52,199,89,0.08)”,cl:“var(–green)”,tx:“Rendah — Tangisan normal”}};
+var uc=urgMap[urg]||urgMap.low;
+
+return h`<div class=“page” style=${{animation:“fade .4s”}}>
+<h2 style=${{fontSize:24,fontWeight:800,letterSpacing:”-.7px”}}>Analisis Tangisan</h2>
+<p style=${{color:“var(–tx2)”,fontSize:14,marginTop:4,marginBottom:24}}>${selBaby.name} · ${ageMo(selBaby.bd)} bulan</p>
+
+```
+<div style=${{display:"flex",justifyContent:"center",margin:"16px 0 28px"}}>
+  <div class="card" style=${{width:ph==="idle"?130:200,height:ph==="idle"?130:72,borderRadius:ph==="idle"?65:36,display:"flex",flexDirection:ph==="idle"?"column":"row",alignItems:"center",justifyContent:"center",gap:ph==="idle"?6:14,transition:"all .4s cubic-bezier(.34,1.56,.64,1)",position:"relative",background:ph==="rec"?"rgba(0,122,255,0.06)":"var(--card)"}}>
+    ${ph==="rec"&&h`<div style=${{position:"absolute",inset:-5,borderRadius:ph==="idle"?70:41,border:"2px solid rgba(0,122,255,0.25)",animation:"breathe 2s infinite"}}/>`}
+    ${ph==="anl"&&h`<div style=${{position:"absolute",inset:-3,borderRadius:39,border:"3px solid transparent",borderTopColor:"var(--blue)",animation:"spin .8s linear infinite"}}/>`}
+    <${Ic} n=${ph==="anl"?"cpu":ph==="rec"?"mic":ph==="done"?"check":"baby"} s=${ph==="idle"?40:26} c=${ph==="rec"?"var(--blue)":ph==="anl"?"var(--purple)":"var(--tx)"} w=${1.5}/>
+    ${ph!=="idle"&&h`<span style=${{fontSize:20,fontWeight:700,color:ph==="rec"?"var(--blue)":"var(--tx)",letterSpacing:".5px"}}>${ph==="rec"?fmt(el):ph==="anl"?"...":"OK"}</span>`}
+  </div>
 </div>
-</div>`}
 
-${msgs.length>0&&html`<div ref=${scrollRef} style=${{maxHeight:320,overflowY:"auto",marginBottom:14,display:"flex",flexDirection:"column",gap:10,WebkitOverflowScrolling:"touch"}}>
-${msgs.map(function(m,i){return m.role==="user"?html`<div key=${i} style=${{alignSelf:"flex-end",background:"#0A84FF",color:"#FFF",padding:"10px 16px",borderRadius:"18px 18px 4px 18px",fontSize:14,lineHeight:1.5,maxWidth:"85%",animation:"fadeIn 0.3s"}}>${m.text}</div>`:html`<div key=${i} style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"12px 16px",borderRadius:"18px 18px 18px 4px",fontSize:14,lineHeight:1.6,maxWidth:"90%",color:"#1C1C1E",animation:"fadeIn 0.3s"}}>${m.text}</div>`;})}
-${loading&&html`<div style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"12px 16px",borderRadius:"18px 18px 18px 4px",fontSize:14,color:"#8E8E93",display:"flex",alignItems:"center",gap:8,animation:"fadeIn 0.3s"}}><div style=${{width:6,height:6,borderRadius:3,background:"#8E8E93",animation:"blink 1s infinite"}}/> Sedang menjawab...</div>`}
-</div>`}
+${ph==="idle"&&h`<button onClick=${start} class="btn btn-p">Mulai Rekam</button>`}
+${ph==="idle"&&!err&&h`<p style=${{fontSize:13,color:"var(--tx3)",textAlign:"center",marginTop:12}}>Dekatkan mikrofon ke bayi · Min 3 detik</p>`}
+${ph==="rec"&&h`<button onClick=${stop} class="btn btn-d">Berhenti & Analisis</button>`}
+${ph==="anl"&&h`<div style=${{height:5,borderRadius:3,overflow:"hidden",background:"rgba(0,0,0,0.04)",width:"50%",margin:"0 auto"}}><div style=${{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,var(--blue),var(--purple),var(--pink),transparent)",backgroundSize:"200%",animation:"shimmer 1.5s infinite"}}/></div>`}
 
-<div style=${{display:"flex",gap:8}}>
-<input type="text" value=${inp} onInput=${function(e){setInp(e.target.value);}} onKeyDown=${function(e){if(e.key==="Enter")send();}} placeholder="Tanyakan tentang gejala bayi..." style=${{flex:1,padding:"12px 16px",borderRadius:16,border:"1px solid rgba(0,0,0,0.08)",fontSize:15,background:"rgba(0,0,0,0.02)",outline:"none",fontFamily:"inherit"}}/>
-<button onClick=${function(){send();}} disabled=${loading||!inp.trim()} style=${{width:48,height:48,borderRadius:16,border:"none",background:inp.trim()?"#32D74B":"rgba(0,0,0,0.05)",color:inp.trim()?"#FFF":"#C7C7CC",cursor:inp.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-</button>
+${err&&h`<div class="card" style=${{padding:16,marginTop:16,background:"rgba(255,59,48,0.04)",border:"1px solid rgba(255,59,48,0.1)"}}><p style=${{fontSize:14,color:"var(--red)",marginBottom:10}}>${err}</p><button onClick=${reset} class="btn btn-s" style=${{color:"var(--red)"}}>Coba Lagi</button></div>`}
+
+${res&&ph==="done"&&h`<div style=${{marginTop:20,display:"flex",flexDirection:"column",gap:12,animation:"up .5s"}}>
+  <div class="card" style=${{padding:"12px 16px",background:uc.bg,display:"flex",alignItems:"center",gap:10}}><${Ic} n=${urg==="high"?"alert":urg==="medium"?"zap":"check"} s=${18} c=${uc.cl}/><span style=${{fontSize:14,fontWeight:600,color:uc.cl}}>${uc.tx}</span></div>
+
+  ${res.map(function(p,i){var info=CL[p.cls]||CL.unknown;return h`<div key=${i} class="card" style=${{padding:16,background:i===0?"rgba("+[parseInt(info.cl.slice(1,3),16),parseInt(info.cl.slice(3,5),16),parseInt(info.cl.slice(5,7),16)].join(",")+",0.04)":"var(--card)"}}>
+    <div style=${{display:"flex",alignItems:"center",gap:12}}>
+      <div style=${{width:44,height:44,borderRadius:14,background:info.cl+"14",display:"flex",alignItems:"center",justifyContent:"center",color:info.cl}}><${Ic} n=${info.ic} s=${22}/></div>
+      <div style=${{flex:1}}><div style=${{fontWeight:700,fontSize:16}}>${info.l}</div><div style=${{fontSize:12,color:"var(--tx2)",marginTop:2}}>${info.e}</div>
+      ${p.evidence&&i===0&&h`<div style=${{fontSize:12,color:"var(--tx3)",marginTop:6,fontStyle:"italic",lineHeight:1.4}}>${p.evidence}</div>`}</div>
+      <div class="pill" style=${{background:info.cl+"12",padding:"5px 14px"}}><span style=${{fontWeight:700,fontSize:i===0?20:16,color:info.cl}}>${p.conf}</span><span style=${{fontSize:11,color:info.cl+"90"}}>%</span></div>
+    </div>
+    <div style=${{marginTop:12,height:4,borderRadius:2,background:"rgba(0,0,0,0.04)"}}><div style=${{width:p.conf+"%",height:"100%",background:info.cl,borderRadius:2,transition:"width .8s"}}/></div>
+  </div>`;})}
+
+  ${adv&&h`<div class="card" style=${{padding:16,background:"rgba(175,82,222,0.04)",border:"1px solid rgba(175,82,222,0.1)"}}><div style=${{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><${Ic} n="bot" s=${18} c="var(--purple)"/><span style=${{fontWeight:600,fontSize:14,color:"var(--purple)"}}>Rekomendasi AI</span></div><p style=${{fontSize:14,lineHeight:1.65,color:"var(--tx)"}}>${adv}</p></div>`}
+  ${anl&&h`<div class="card" style=${{padding:16,background:"rgba(0,122,255,0.03)",border:"1px solid rgba(0,122,255,0.08)"}}><div style=${{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><${Ic} n="cpu" s=${18} c="var(--blue)"/><span style=${{fontWeight:600,fontSize:14,color:"var(--blue)"}}>Analisis Akustik</span></div><p style=${{fontSize:14,lineHeight:1.65,color:"var(--tx2)"}}>${anl}</p></div>`}
+
+  ${diag&&h`<div class="card-s" style=${{padding:14}}><div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center"}}>${[["F0",diag.pitch.meanF0+"Hz"],["Jitter",(diag.vq.jitter*100).toFixed(1)+"%"],["HNR",diag.vq.hnr+"dB"]].map(function(it,i){return h`<div key=${i}><div style=${{fontSize:10,color:"var(--tx3)",fontWeight:600}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
+    <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center",marginTop:10}}>${[["Ritme",diag.rhythm.pattern==="highly_rhythmic"?"Ritmis":diag.rhythm.pattern==="semi_rhythmic"?"Semi":"Irregular"],["Intensitas",diag.intensity.trend],["Bout",diag.rhythm.bouts+"x"]].map(function(it,i){return h`<div key=${i}><div style=${{fontSize:10,color:"var(--tx3)",fontWeight:600}}>${it[0]}</div><div style=${{fontSize:13,fontWeight:600,marginTop:2}}>${it[1]}</div></div>`;})}</div>
+  </div>`}
+
+  <div class="card" style=${{overflow:"hidden"}}>
+    <button onClick=${function(){setShowChat(!showChat);}} style=${{width:"100%",padding:"14px 16px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:10}}>
+      <div style=${{width:32,height:32,borderRadius:10,background:"rgba(52,199,89,0.1)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)"}}><${Ic} n="help" s=${18}/></div>
+      <span style=${{flex:1,textAlign:"left",fontWeight:600,fontSize:14}}>Tanya AI Lanjutan</span>
+      <span style=${{fontSize:12,color:"var(--tx3)",transform:showChat?"rotate(90deg)":"none",transition:".2s"}}>▶</span>
+    </button>
+    ${showChat&&h`<div style=${{padding:"0 16px 16px",animation:"fade .3s"}}>
+      ${chat.length===0&&h`<div style=${{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+        ${["Apa ciri tangisan lapar vs mengantuk?","Kapan harus ke dokter?","Teknik menenangkan yang efektif?"].map(function(q,i){return h`<button key=${i} onClick=${function(){sendChat(q);}} style=${{background:"rgba(52,199,89,0.06)",border:"1px solid rgba(52,199,89,0.15)",borderRadius:12,padding:"7px 12px",fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.3,color:"var(--tx)"}}>${q}</button>`;})}
+      </div>`}
+      ${chat.length>0&&h`<div style=${{maxHeight:280,overflowY:"auto",marginBottom:12,display:"flex",flexDirection:"column",gap:8}}>
+        ${chat.map(function(m,i){return m.r==="u"?h`<div key=${i} style=${{alignSelf:"flex-end",background:"var(--blue)",color:"#FFF",padding:"10px 14px",borderRadius:"16px 16px 4px 16px",fontSize:14,lineHeight:1.5,maxWidth:"82%"}}>${m.t}</div>`:h`<div key=${i} style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"10px 14px",borderRadius:"16px 16px 16px 4px",fontSize:14,lineHeight:1.6,maxWidth:"88%"}}>${m.t}</div>`;})}
+        ${chatLoading&&h`<div style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"10px 14px",borderRadius:"16px 16px 16px 4px",fontSize:13,color:"var(--tx3)",display:"flex",alignItems:"center",gap:6}}><div style=${{width:5,height:5,borderRadius:3,background:"var(--tx3)",animation:"blink 1s infinite"}}/>Menjawab...</div>`}
+      </div>`}
+      <div style=${{display:"flex",gap:8}}>
+        <input class="inp" value=${ci} onInput=${function(e){setCi(e.target.value);}} onKeyDown=${function(e){if(e.key==="Enter")sendChat();}} placeholder="Tanyakan tentang bayi..." style=${{flex:1,fontSize:14,padding:"12px 14px"}}/>
+        <button onClick=${function(){sendChat();}} disabled=${chatLoading||!ci.trim()} style=${{width:44,height:44,borderRadius:14,border:"none",background:ci.trim()?"var(--green)":"rgba(0,0,0,0.04)",color:ci.trim()?"#FFF":"var(--tx3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><${Ic} n="send" s=${18}/></button>
+      </div>
+    </div>`}
+  </div>
+
+  <button onClick=${reset} class="btn btn-s" style=${{marginTop:4}}>Rekam Ulang</button>
+</div>`}
+```
+
+  </div>`;
+}
+
+/* –––– GROWTH TAB –––– */
+function GrowthTab(){
+if(!selBaby)return h`<div class="page" style=${{display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"}}><div><${Ic} n="chart" s=${48} c="var(--tx3)" w=${1.3}/><p style=${{color:"var(--tx3)",marginTop:12,fontSize:15}}>Pilih bayi di tab Home</p></div></div>`;
+var *entries=useState(LS.get(“growth*”+selBaby.id,[])),entries=_entries[0],setEntries=_entries[1];
+var _add=useState(false),add=_add[0],setAdd=_add[1];
+var _w=useState(””),w=_w[0],setW=_w[1];
+var _ht=useState(””),ht=_ht[0],setHt=_ht[1];
+var _dt=useState(new Date().toISOString().split(“T”)[0]),dt=_dt[0],setDt=_dt[1];
+var _note=useState(””),note=_note[0],setNote=_note[1];
+var _aiAdv=useState(””),aiAdv=_aiAdv[0],setAiAdv=_aiAdv[1];
+var _aiL=useState(false),aiL=_aiL[0],setAiL=_aiL[1];
+var _chartType=useState(“w”),chartType=_chartType[0],setChartType=_chartType[1];
+
+var who=getWHO(selBaby.gender),age=ageMo(selBaby.bd);
+function saveEntries(list){setEntries(list);LS.set(“growth_”+selBaby.id,list);}
+function addGrowth(){if(!w&&!ht)return;var ne={dt:dt,w:parseFloat(w)||null,h:parseFloat(ht)||null,mo:ageMo(selBaby.bd),note:note,ts:Date.now()};var list=[ne].concat(entries);saveEntries(list);setAdd(false);setW(””);setHt(””);setNote(””);}
+function delGrowth(i){var list=entries.slice();list.splice(i,1);saveEntries(list);}
+
+function askAI(){if(!entries.length){setAiAdv(“Belum ada data. Tambahkan data pertumbuhan dulu.”);return;}setAiL(true);
+var latest=entries[0],wr=whoRow(who.w,age),hr=whoRow(who.h,age);
+groq(“Anda dokter anak. Evaluasi pertumbuhan bayi vs standar WHO. Berikan status persentil, evaluasi status gizi, dan rekomendasi catch-up SPESIFIK jika perlu (jenis MPASI, frekuensi makan, tips). Bahasa Indonesia, maks 3 paragraf. TANPA markdown/formatting.”,
+“Bayi: “+selBaby.name+”, “+selBaby.gender+”, “+age+” bulan.\nBB lahir: “+selBaby.bw+” kg, PB lahir: “+selBaby.bh+” cm.\nData terakhir (”+latest.dt+”): BB=”+(latest.w||”?”)+“kg (WHO P50=”+wr[3]+”), PB=”+(latest.h||”?”)+“cm (WHO P50=”+hr[3]+”).\nWHO “+age+“bl: BB P3=”+wr[1]+” P50=”+wr[3]+” P97=”+wr[5]+”, PB P3=”+hr[1]+” P50=”+hr[3]+” P97=”+hr[5]+”.\nRiwayat: “+entries.slice(0,5).map(function(e){return e.dt+”: BB=”+(e.w||”?”)+”, PB=”+(e.h||”?”);}).join(”; “)).then(function(r){setAiL(false);setAiAdv(r||“Gagal menghubungi AI.”);});}
+
+return h`<div class=“page” style=${{animation:“fade .4s”}}>
+<h2 style=${{fontSize:24,fontWeight:800,letterSpacing:”-.7px”}}>${selBaby.name}</h2>
+<p style=${{color:“var(–tx2)”,fontSize:14,marginTop:4,marginBottom:20}}>${age} bulan · Grafik Pertumbuhan WHO</p>
+
+```
+<div class="seg-group" style=${{marginBottom:16}}>
+  <button class=${"seg-btn"+(chartType==="w"?" on":"")} onClick=${function(){setChartType("w");}}>Berat Badan (kg)</button>
+  <button class=${"seg-btn"+(chartType==="h"?" on":"")} onClick=${function(){setChartType("h");}}>Panjang Badan (cm)</button>
 </div>
+
+<${GChart} data=${chartType==="w"?who.w:who.h} entries=${entries} type=${chartType} bd=${selBaby.bd}/>
+
+${entries.length>0&&h`<div style=${{display:"flex",gap:8,marginTop:12}}>
+  ${[["BB",entries[0].w?entries[0].w+" kg":"-",entries[0].w?percLabel(entries[0].w,whoRow(who.w,entries[0].mo||age)):"-","var(--pink)"],["PB",entries[0].h?entries[0].h+" cm":"-",entries[0].h?percLabel(entries[0].h,whoRow(who.h,entries[0].mo||age)):"-","var(--blue)"]].map(function(it,i){return h`<div key=${i} class="card-s" style=${{flex:1,padding:14,textAlign:"center"}}><div style=${{fontSize:11,color:"var(--tx3)",fontWeight:600}}>${it[0]} Terakhir</div><div style=${{fontSize:20,fontWeight:800,marginTop:4,color:it[3]}}>${it[1]}</div><div style=${{fontSize:11,color:"var(--tx3)",marginTop:2}}>${it[2]}</div></div>`;})}</div>`}
+
+${!add?h`<button onClick=${function(){setAdd(true);}} class="btn btn-p" style=${{marginTop:14}}>Tambah Data Pertumbuhan</button>`:h`<div class="card" style=${{padding:18,marginTop:14,animation:"up .3s"}}>
+  <div style=${{fontWeight:700,fontSize:16,marginBottom:14}}>Input Data</div>
+  <input class="inp" type="date" value=${dt} onInput=${function(e){setDt(e.target.value);}} style=${{marginBottom:8}}/>
+  <div style=${{display:"flex",gap:8,marginBottom:8}}>
+    <input class="inp" type="number" step="0.01" placeholder="BB (kg)" value=${w} onInput=${function(e){setW(e.target.value);}}/>
+    <input class="inp" type="number" step="0.1" placeholder="PB (cm)" value=${ht} onInput=${function(e){setHt(e.target.value);}}/>
+  </div>
+  <input class="inp" placeholder="Catatan (opsional)" value=${note} onInput=${function(e){setNote(e.target.value);}} style=${{marginBottom:12}}/>
+  <div style=${{display:"flex",gap:8}}><button onClick=${function(){setAdd(false);}} class="btn btn-s" style=${{flex:1}}>Batal</button><button onClick=${addGrowth} class="btn btn-p" style=${{flex:1}}>Simpan</button></div>
 </div>`}
+
+<button onClick=${askAI} disabled=${aiL} class="btn" style=${{marginTop:14,background:"rgba(175,82,222,0.08)",color:"var(--purple)",border:"1px solid rgba(175,82,222,0.15)",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><${Ic} n="bot" s=${18} c="var(--purple)"/>${aiL?"Menganalisis...":"Rekomendasi AI Pertumbuhan"}</button>
+
+${aiAdv&&h`<div class="card" style=${{padding:16,marginTop:12,background:"rgba(175,82,222,0.03)",border:"1px solid rgba(175,82,222,0.08)"}}><div style=${{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><${Ic} n="bot" s=${18} c="var(--purple)"/><span style=${{fontWeight:600,fontSize:14,color:"var(--purple)"}}>Rekomendasi Pertumbuhan</span></div><p style=${{fontSize:14,lineHeight:1.7,whiteSpace:"pre-wrap"}}>${aiAdv}</p></div>`}
+
+${entries.length>0&&h`<div style=${{marginTop:20}}>
+  <div class="section-title">Riwayat Data</div>
+  ${entries.slice(0,12).map(function(e,i){return h`<div key=${i} class="card-s" style=${{padding:"12px 14px",marginBottom:6,display:"flex",alignItems:"center"}}>
+    <div style=${{flex:1}}>
+      <div style=${{fontWeight:600,fontSize:14}}>${e.dt}</div>
+      <div style=${{fontSize:12,color:"var(--tx2)",marginTop:3,display:"flex",gap:12}}>
+        ${e.w&&h`<span>BB: ${e.w}kg</span>`}${e.h&&h`<span>PB: ${e.h}cm</span>`}
+      </div>
+      ${e.note&&h`<div style=${{fontSize:11,color:"var(--tx3)",marginTop:3}}>${e.note}</div>`}
+    </div>
+    <button onClick=${function(){delGrowth(i);}} style=${{background:"none",border:"none",padding:6,color:"var(--tx3)"}}><${Ic} n="trash" s=${14}/></button>
+  </div>`;})}
+</div>`}
+```
+
+  </div>`;
+}
+
+/* –––– HISTORY TAB –––– */
+function HistTab(){
+if(!selBaby)return h`<div class="page" style=${{display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"}}><div><${Ic} n="clock" s=${48} c="var(--tx3)" w=${1.3}/><p style=${{color:"var(--tx3)",marginTop:12,fontSize:15}}>Pilih bayi di tab Home</p></div></div>`;
+var sessions=LS.get(“sessions_”+selBaby.id,[]);
+function fmtTs(ts){return new Date(ts).toLocaleDateString(“id-ID”,{day:“numeric”,month:“short”,hour:“2-digit”,minute:“2-digit”});}
+function clearHist(){if(confirm(“Hapus semua riwayat?”)){LS.set(“sessions_”+selBaby.id,[]);location.reload();}}
+
+return h`<div class="page" style=${{animation:"fade .4s"}}> <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}> <div><h2 style=${{fontSize:24,fontWeight:800,letterSpacing:"-.7px"}}>Riwayat</h2><p style=${{color:"var(--tx2)",fontSize:14,marginTop:4}}>${selBaby.name} · ${sessions.length} sesi</p></div> ${sessions.length>0&&h`<button onClick=${clearHist} style=${{background:“rgba(255,59,48,0.08)”,border:“none”,borderRadius:10,padding:“8px 14px”,fontSize:12,fontWeight:600,color:“var(–red)”}}>Hapus</button>`} </div> ${sessions.length===0&&h`<div class=“card” style=${{padding:40,textAlign:“center”}}><${Ic} n=“mic” s=${40} c=“var(–tx3)” w=${1.3}/><p style=${{color:“var(–tx3)”,marginTop:12}}>Belum ada riwayat. Mulai analisis di tab Tangisan.</p></div>`} ${sessions.map(function(s,i){var top=s.preds&&s.preds[0];var info=top?CL[top.cls]||CL.unknown:CL.unknown; return h`<div key=${i} class="card" style=${{padding:16,marginBottom:10}}>
+<div style=${{display:“flex”,alignItems:“center”,gap:12}}>
+<div style=${{width:40,height:40,borderRadius:12,background:info.cl+“12”,display:“flex”,alignItems:“center”,justifyContent:“center”,color:info.cl}}><${Ic} n=${info.ic} s=${20}/></div>
+<div style=${{flex:1}}>
+<div style=${{fontWeight:600,fontSize:15}}>${info.l} ${top?” · “+top.conf+”%”:””}</div>
+<div style=${{fontSize:12,color:“var(–tx3)”,marginTop:2}}>${fmtTs(s.ts)}</div>
+</div>
+${s.urg&&h`<span class="pill" style=${{fontSize:9,fontWeight:700,padding:"3px 10px",textTransform:"uppercase",letterSpacing:".5px",background:s.urg==="high"?"rgba(255,59,48,0.08)":s.urg==="medium"?"rgba(255,149,0,0.08)":"rgba(52,199,89,0.08)",color:s.urg==="high"?"var(--red)":s.urg==="medium"?"var(--orange)":"var(--green)"}}>${s.urg}</span>`}
+</div>
+${s.diag&&h`<div style=${{display:"flex",gap:10,marginTop:10,fontSize:11,color:"var(--tx3)"}}>${s.diag.f0?h`<span>F0: ${s.diag.f0}Hz</span>`:null}${s.diag.rhythm?h`<span>${s.diag.rhythm}</span>`:null}${s.diag.trend?h`<span>${s.diag.trend}</span>`:null}</div>`}
+${s.adv&&h`<p style=${{fontSize:13,color:"var(--tx2)",marginTop:8,lineHeight:1.5}}>${s.adv.length>120?s.adv.slice(0,120)+"...":s.adv}</p>`}
+</div>`;})}
+
+  </div>`;
+}
+
+/* –––– TAB BAR –––– */
+return h`<div> ${tab==="home"&&h`<${HomeTab}/>`} ${tab==="cry"&&h`<${CryTab}/>`} ${tab==="growth"&&h`<${GrowthTab}/>`} ${tab==="history"&&h`<${HistTab}/>`}
+
+  <div class="tab-bar">
+    ${[{id:"home",ic:"home",l:"Home"},{id:"cry",ic:"mic",l:"Tangisan"},{id:"growth",ic:"chart",l:"Tumbuh"},{id:"history",ic:"clock",l:"Riwayat"}].map(function(t){return h`<button key=${t.id} class=${"tab"+(tab===t.id?" on":"")} onClick=${function(){setTab(t.id);}}><${Ic} n=${t.ic} s=${22} c=${tab===t.id?"var(--blue)":"var(--tx3)"} w=${tab===t.id?2.2:1.8}/><span>${t.l}</span></button>`;})}
+  </div>
 </div>`;
 }
 
-function ResultCard(props){var pred=props.pred,rank=props.rank,db=CRY_DB[pred.class]||CRY_DB.unknown,top=rank===0;var _o=useState(top),open=_o[0],setOpen=_o[1];var _t=useState("steps"),tab=_t[0],setTab=_t[1];
-return html`<div className="gl" style=${{background:top?"linear-gradient(135deg,"+db.colorLight+"DD,rgba(255,255,255,0.9))":"rgba(255,255,255,0.7)",animation:"slideUp 0.6s cubic-bezier(0.2,0.8,0.2,1) "+rank*0.1+"s both",overflow:"hidden"}}>
-<div onClick=${function(){setOpen(!open);}} style=${{padding:"18px 20px",cursor:"pointer"}}><div style=${{display:"flex",alignItems:"center",gap:14}}>
-<div style=${{width:top?54:44,height:top?54:44,borderRadius:top?20:14,background:db.color+"15",display:"flex",alignItems:"center",justifyContent:"center",color:db.color}}><${Icon} name=${db.icon} size=${top?28:22} strokeWidth=${2.5}/></div>
-<div style=${{flex:1}}><div style=${{fontWeight:600,fontSize:top?18:16}}>${db.label}</div><div style=${{fontSize:13,color:"#8E8E93",marginTop:2}}>${db.labelEn}</div>${pred.acoustic_evidence&&top&&html`<div style=${{fontSize:12,color:"#636366",marginTop:6,fontStyle:"italic"}}>${pred.acoustic_evidence}</div>`}</div>
-<div className="pill" style=${{background:db.color+"15",padding:"6px 16px",border:"1px solid "+db.color+"30"}}><span style=${{fontWeight:700,fontSize:top?22:18,color:db.color}}>${pred.confidence}</span><span style=${{fontSize:12,color:db.color+"90",fontWeight:600}}>%</span></div></div>
-<div style=${{marginTop:16,height:5,borderRadius:3,background:"rgba(0,0,0,0.04)",overflow:"hidden"}}><div style=${{width:pred.confidence+"%",height:"100%",background:"linear-gradient(90deg,"+db.color+","+db.color+"CC)",borderRadius:3,transition:"width 1s"}}/></div></div>
-${open&&html`<div style=${{padding:"0 20px 20px",animation:"fadeIn 0.4s"}}><p style=${{fontSize:15,color:"#48484A",lineHeight:1.5,margin:"0 0 16px"}}>${db.desc}</p>
-<div style=${{display:"flex",background:"rgba(0,0,0,0.05)",borderRadius:14,padding:3,marginBottom:16}}>${["steps","visual","warning"].map(function(t){return html`<button key=${t} className=${"seg"+(tab===t?" on":"")} onClick=${function(e){e.stopPropagation();setTab(t);}}>${t==="steps"?"Langkah":t==="visual"?"Visual":"Peringatan"}</button>`;})}</div>
-${tab==="steps"&&html`<div style=${{display:"flex",flexDirection:"column",gap:10}}>${db.steps.map(function(st,i){return html`<div key=${i} className="gi" style=${{display:"flex",gap:14,padding:14}}><div style=${{width:40,height:40,borderRadius:12,background:db.color+"12",display:"flex",alignItems:"center",justifyContent:"center",color:db.color,flexShrink:0}}><${Icon} name=${st.i} size=${20}/></div><div style=${{flex:1}}><div style=${{display:"flex",alignItems:"center",gap:8,marginBottom:4}}><span style=${{fontSize:11,color:"#FFF",fontWeight:700,background:db.color,padding:"2px 8px",borderRadius:8}}>${st.n}</span><span style=${{fontWeight:600,fontSize:15}}>${st.a}</span></div><p style=${{fontSize:14,color:"#636366",lineHeight:1.4,margin:0}}>${st.d}</p></div></div>`;})}</div>`}
-${tab==="visual"&&html`<div style=${{display:"flex",flexDirection:"column",gap:10}}>${db.tips.map(function(vt,i){return html`<div key=${i} className="gi" style=${{padding:16}}><div style=${{fontWeight:600,fontSize:15,marginBottom:8}}>${vt.t}</div><p style=${{fontSize:14,color:"#636366",lineHeight:1.5,margin:0}}>${vt.d}</p></div>`;})}</div>`}
-${tab==="warning"&&html`<div><div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"12px 16px",borderRadius:16,background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)"}}><${Icon} name="alert" color="#FF453A" size=${20}/><span style=${{fontWeight:600,fontSize:15,color:"#FF453A"}}>Segera ke Dokter Jika</span></div>
-<div style=${{display:"flex",flexDirection:"column",gap:8}}>${db.warns.map(function(w,i){return html`<div key=${i} className="wi"><div style=${{width:24,height:24,borderRadius:"50%",background:"rgba(255,69,58,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#FF453A",fontWeight:700,flexShrink:0}}>${i+1}</div><p style=${{fontSize:14,lineHeight:1.4,margin:0}}>${w}</p></div>`;})}</div>
-<div style=${{marginTop:12,padding:"12px 16px",borderRadius:16,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",display:"flex",alignItems:"center",gap:10}}><${Icon} name="phone" size=${18} color="#FF9F0A"/><p style=${{fontSize:13,color:"#636366",margin:0}}><b>Darurat:</b> 119 ext 8 / IGD</p></div></div>`}
-</div>`}</div>`;}
-
-function Urgency(props){var m={high:{bg:"rgba(255,69,58,0.1)",br:"rgba(255,69,58,0.2)",cl:"#FF453A",ic:"alert",tx:"Tinggi — Konsultasi dokter"},medium:{bg:"rgba(255,159,10,0.1)",br:"rgba(255,159,10,0.2)",cl:"#FF9F0A",ic:"zap",tx:"Sedang — Pantau respons bayi"},low:{bg:"rgba(50,215,75,0.1)",br:"rgba(50,215,75,0.2)",cl:"#32D74B",ic:"check",tx:"Rendah — Tangisan normal"}};var c=m[props.level];if(!c)return null;
-return html`<div className="gl" style=${{background:c.bg,border:"1px solid "+c.br,padding:"12px 20px",display:"flex",alignItems:"center",gap:12}}><${Icon} name=${c.ic} color=${c.cl} size=${24}/><div><div style=${{fontSize:11,color:c.cl,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px"}}>Urgensi</div><div style=${{fontSize:14,fontWeight:500,marginTop:2}}>${c.tx}</div></div></div>`;}
-
-function KeyModal(props){var _k=useState(""),key=_k[0],setKey=_k[1];var ck=key.trim(),ok=ck.indexOf("gsk_")===0;
-return html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20,animation:"fadeIn 0.3s"}}><div className="gl" style=${{padding:32,maxWidth:380,width:"100%",background:"rgba(255,255,255,0.85)"}}><div style=${{display:"flex",justifyContent:"center",marginBottom:16}}><${Icon} name="key" size=${40} strokeWidth=${1.5}/></div><h2 style=${{fontSize:22,fontWeight:700,textAlign:"center",marginBottom:8}}>API Key</h2><p style=${{fontSize:14,color:"#8E8E93",textAlign:"center",marginBottom:24}}>Masukkan API Key Groq.</p><input type="password" value=${key} onInput=${function(e){setKey(e.target.value);}} placeholder="gsk_..." style=${{width:"100%",padding:"16px 20px",borderRadius:16,border:"1px solid rgba(0,0,0,0.1)",fontSize:16,background:"rgba(0,0,0,0.03)",outline:"none",marginBottom:20}}/><button onClick=${function(){if(ok){window.__GROQ_KEY=ck;try{localStorage.setItem("groq_key",ck);}catch(e){}props.onSave(ck);}}} style=${{width:"100%",padding:16,borderRadius:16,border:"none",background:"#0A84FF",color:"#FFF",fontSize:17,fontWeight:600,cursor:ok?"pointer":"not-allowed",opacity:ok?1:0.4}}>Simpan</button></div></div>`;}
-
-function App(){
-var _p=useState("idle"),phase=_p[0],setPhase=_p[1],_e=useState(0),elapsed=_e[0],setElapsed=_e[1],_sd=useState([]),specData=_sd[0],setSpecData=_sd[1],_r=useState(null),results=_r[0],setResults=_r[1],_aa=useState(""),aiAn=_aa[0],setAiAn=_aa[1],_av=useState(""),aiAd=_av[0],setAiAd=_av[1],_u=useState("low"),urg=_u[0],setUrg=_u[1],_er=useState(null),err=_er[0],setErr=_er[1],_nk=useState(false),needKey=_nk[0],setNeedKey=_nk[1],_ak=useState(""),akd=_ak[0],setAkd=_ak[1],_dg=useState(null),diag=_dg[0],setDiag=_dg[1];
-var msR=useRef(null),acR=useRef(null),anR=useRef(null),fhR=useRef([]),tmR=useRef(null),clR=useRef(null),phR=useRef("idle");
-useEffect(function(){var k=localStorage.getItem("groq_key");if(k){window.__GROQ_KEY=k;setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}var el=document.getElementById("loading");if(el)el.style.display="none";},[]);
-useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();};},[]);
-
-function start(){setErr(null);setResults(null);setAiAn("");setAiAd("");setSpecData([]);setDiag(null);fhR.current=[];
-navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;var src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0.7;src.connect(an);anR.current=an;setPhase("recording");phR.current="recording";setElapsed(0);tmR.current=setInterval(function(){setElapsed(function(e){return e+1;});},1000);clR.current=setInterval(function(){var f=extractFeatures(an,ac.sampleRate);if(f.avgAmplitude>2){fhR.current.push(f);setSpecData(function(p){return p.concat([f]);});}},200);}).catch(function(e){setErr(e.name==="NotAllowedError"?"Izin mikrofon ditolak.":"Error: "+e.message);});}
-
-function stop(){if(phR.current!=="recording")return;phR.current="analyzing";clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();setPhase("analyzing");if(fhR.current.length<5){setErr("Rekam min 3 detik dengan tangisan jelas.");setPhase("idle");phR.current="idle";return;}if(!window.__GROQ_KEY){setNeedKey(true);setPhase("idle");phR.current="idle";return;}
-classify(fhR.current).then(function(r){if(r&&r.predictions){setResults(r.predictions);setAiAn(r.analysis||"");setAiAd(r.contextual_advice||"");setUrg(r.urgency||"low");setDiag(r._diag||null);setPhase("results");phR.current="results";}else{setErr("Gagal.");setPhase("idle");phR.current="idle";}}).catch(function(e){setErr(e.message);setPhase("idle");phR.current="idle";});}
-
-function reset(){setPhase("idle");phR.current="idle";setResults(null);setAiAn("");setAiAd("");setSpecData([]);setElapsed(0);setErr(null);setDiag(null);}
-function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
-
-return html`<div>
-${needKey&&html`<${KeyModal} onSave=${function(k){setNeedKey(false);if(k)setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}}/>`}
-<div style=${{textAlign:"center",padding:"56px 24px 24px",animation:"fadeIn 0.8s"}}>
-<div className="pill" style=${{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(10,132,255,0.1)",border:"1px solid rgba(10,132,255,0.15)",padding:"6px 16px",marginBottom:20}}><div style=${{width:6,height:6,borderRadius:"50%",background:"#0A84FF"}}/><span style=${{fontSize:12,fontWeight:700,color:"#0A84FF",letterSpacing:"0.5px"}}>DEEPINFANT v2</span></div>
-<h1 style=${{fontWeight:800,fontSize:38,margin:0,letterSpacing:"-1.2px",lineHeight:1.1}}>Baby Cry<br/>Translator</h1>
-<p style=${{fontSize:16,color:"#8E8E93",marginTop:10,fontWeight:500}}>Hybrid Acoustic + AI Analysis</p></div>
-<div style=${{maxWidth:460,margin:"0 auto",padding:"0 20px 48px"}}>
-
-<div style=${{textAlign:"center",margin:"10px 0 32px",height:140,display:"flex",alignItems:"center",justifyContent:"center"}}>
-<div className="gl" style=${{width:phase==="idle"?140:phase==="recording"?220:180,height:phase==="idle"?140:80,borderRadius:phase==="idle"?70:40,display:"flex",flexDirection:phase==="idle"?"column":"row",alignItems:"center",justifyContent:"center",gap:phase==="idle"?8:16,transition:"all 0.5s cubic-bezier(0.34,1.56,0.64,1)",background:phase==="recording"?"rgba(10,132,255,0.1)":"var(--gl)",border:phase==="recording"?"1px solid rgba(10,132,255,0.3)":"1px solid var(--gb)",position:"relative"}}>
-${phase==="recording"&&html`<div style=${{position:"absolute",inset:-6,borderRadius:46,border:"2px solid rgba(10,132,255,0.3)",animation:"breathe 2s ease-in-out infinite"}}/>`}
-${phase==="analyzing"&&html`<div style=${{position:"absolute",inset:-3,borderRadius:43,border:"3px solid transparent",borderTopColor:"#0A84FF",animation:"spin 1s linear infinite"}}/>`}
-<div style=${{color:phase==="recording"?"#0A84FF":phase==="analyzing"?"#BF5AF2":"#1C1C1E"}}><${Icon} name=${phase==="analyzing"?"cpu":phase==="recording"?"mic":phase==="results"?"check":"smile"} size=${phase==="idle"?44:32} strokeWidth=${phase==="idle"?1.5:2}/></div>
-${phase!=="idle"&&html`<span style=${{fontSize:22,fontWeight:700,color:phase==="recording"?"#0A84FF":"#1C1C1E"}}>${phase==="recording"?fmt(elapsed):phase==="analyzing"?"Analisis...":"Selesai"}</span>`}
-</div></div>
-
-${phase==="recording"&&html`<div style=${{marginBottom:16,animation:"fadeIn 0.4s"}}><div style=${{fontSize:12,color:"#8E8E93",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:"1px"}}>Waveform</div><${Wave} aRef=${anR} rec=${true}/></div>`}
-${specData.length>0&&html`<div style=${{marginBottom:20,animation:"fadeIn 0.4s"}}><div style=${{fontSize:12,color:"#8E8E93",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:"1px"}}>Mel-Spectrogram</div><${Spectrogram} data=${specData} rec=${phase==="recording"}/></div>`}
-
-<div style=${{textAlign:"center",margin:"24px 0"}}>
-${phase==="idle"&&html`<button onClick=${start} style=${{background:"#0A84FF",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:"pointer",boxShadow:"0 8px 24px rgba(10,132,255,0.3)",width:"100%"}}>Mulai Rekam</button>`}
-${phase==="recording"&&html`<button onClick=${stop} style=${{background:"#FF453A",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:"pointer",width:"100%"}}>Berhenti & Analisis</button>`}
-${phase==="analyzing"&&html`<div style=${{height:6,borderRadius:3,overflow:"hidden",background:"rgba(0,0,0,0.05)",width:"60%",margin:"0 auto"}}><div style=${{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,#0A84FF,#BF5AF2,#FF375F,transparent)",backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/></div>`}
-${phase==="idle"&&!err&&html`<p style=${{fontSize:14,color:"#8E8E93",marginTop:16,fontWeight:500}}>Dekatkan mikrofon · Min 3 detik</p>`}
-</div>
-
-${err&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginBottom:20}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Error</span></div><p style=${{fontSize:14,color:"#48484A",margin:0}}>${err}</p>${phase!=="recording"&&html`<button onClick=${reset} style=${{marginTop:14,background:"#FFF",border:"1px solid rgba(255,69,58,0.2)",borderRadius:12,padding:"10px 24px",color:"#FF453A",fontSize:15,cursor:"pointer",fontWeight:600}}>Coba Lagi</button>`}</div>`}
-
-${results&&phase==="results"&&html`<div style=${{display:"flex",flexDirection:"column",gap:14,animation:"fadeIn 0.5s"}}>
-<${Urgency} level=${urg}/>
-<div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,padding:"0 4px"}}><span style=${{fontWeight:700,fontSize:22}}>Hasil Analisis</span><span style=${{fontSize:12,color:"#8E8E93",background:"rgba(0,0,0,0.04)",padding:"4px 12px",borderRadius:10,fontWeight:600}}>${specData.length}f · ${elapsed}s</span></div>
-${results.map(function(p,i){return html`<${ResultCard} key=${p.class} pred=${p} rank=${i}/>`;})}
-${aiAd&&html`<div className="gl" style=${{background:"rgba(191,90,242,0.06)",border:"1px solid rgba(191,90,242,0.15)",padding:20}}><div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><div style=${{width:32,height:32,borderRadius:10,background:"rgba(191,90,242,0.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#BF5AF2"}}><${Icon} name="bot" size=${18}/></div><span style=${{fontWeight:600,fontSize:15,color:"#BF5AF2"}}>Rekomendasi AI</span></div><p style=${{fontSize:15,lineHeight:1.6,margin:0}}>${aiAd}</p></div>`}
-${aiAn&&html`<div className="gl" style=${{background:"rgba(10,132,255,0.06)",border:"1px solid rgba(10,132,255,0.15)",padding:20}}><div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><div style=${{width:32,height:32,borderRadius:10,background:"rgba(10,132,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0A84FF"}}><${Icon} name="cpu" size=${18}/></div><span style=${{fontWeight:600,fontSize:15,color:"#0A84FF"}}>Analisis Akustik</span></div><p style=${{fontSize:15,color:"#48484A",lineHeight:1.6,margin:0}}>${aiAn}</p></div>`}
-<${DiagPanel} diag=${diag}/>
-<${FollowUpChat} results=${results} aiAn=${aiAn} aiAd=${aiAd} diag=${diag}/>
-<button onClick=${reset} style=${{background:"rgba(0,0,0,0.05)",border:"none",borderRadius:20,padding:"18px 0",fontWeight:600,fontSize:17,color:"#0A84FF",cursor:"pointer",width:"100%",marginTop:10}}>Rekam Ulang</button>
-</div>`}
-
-${phase==="idle"&&!err&&html`<div style=${{animation:"slideUp 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.1s both"}}>
-<div className="gl" style=${{padding:24,marginTop:16}}><div style=${{fontWeight:700,fontSize:18,marginBottom:18}}>Pipeline v2</div>
-<div style=${{display:"flex",flexDirection:"column",gap:10}}>
-${[{s:"1",t:"Feature Extraction",d:"F0, Jitter, Shimmer, HNR, Mel-32",c:"#0A84FF"},{s:"2",t:"Temporal Analysis",d:"Bout detection, rhythmicity",c:"#BF5AF2"},{s:"3",t:"Rule-Based Classifier",d:"Scoring literatur akustik",c:"#FF9F0A"},{s:"4",t:"LLM Refinement",d:"Llama-3.3 70B evaluasi koherensi",c:"#32D74B"},{s:"5",t:"Tanya AI Lanjutan",d:"Chat follow-up gejala & saran",c:"#FF453A"}].map(function(st){return html`<div key=${st.s} className="gi" style=${{padding:14,display:"flex",gap:12}}><div style=${{width:28,height:28,borderRadius:8,background:st.c+"15",display:"flex",alignItems:"center",justifyContent:"center",color:st.c,fontSize:13,fontWeight:700,flexShrink:0}}>${st.s}</div><div><div style=${{fontWeight:600,fontSize:14}}>${st.t}</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>${st.d}</div></div></div>`;})}
-</div></div>
-<div style=${{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-<p style=${{fontSize:13,color:"#C7C7CC"}}>Powered by Groq Cloud API</p>
-${akd&&html`<div style=${{display:"flex",alignItems:"center",gap:6,background:"rgba(50,215,75,0.1)",padding:"6px 14px",borderRadius:100,border:"1px solid rgba(50,215,75,0.2)"}}><div style=${{width:8,height:8,borderRadius:4,background:"#32D74B",animation:"pulseGlow 2s infinite"}}/><span style=${{fontSize:12,color:"#32D74B",fontWeight:700}}>${akd}</span></div>`}
-<button onClick=${function(){setNeedKey(true);}} style=${{display:"flex",alignItems:"center",gap:6,background:"var(--gl)",border:"1px solid var(--gb)",borderRadius:14,padding:"10px 20px",fontSize:14,fontWeight:600,color:"#48484A",cursor:"pointer",marginTop:8}}><${Icon} name="key" size=${16}/>Atur API Key</button></div>
-<div className="gl" style=${{padding:16,marginTop:20,background:"rgba(255,159,10,0.06)",border:"1px solid rgba(255,159,10,0.15)"}}><p style=${{fontSize:12,color:"#8E8E93",lineHeight:1.5,margin:0,textAlign:"center"}}><b style=${{color:"#FF9F0A"}}>Disclaimer:</b> BUKAN alat diagnostik medis. Konsultasikan ke dokter anak.</p></div>
-</div>`}
-</div></div>`;}
-
-ReactDOM.createRoot(document.getElementById("root")).render(html`<${App}/>`);
+ReactDOM.createRoot(document.getElementById(“root”)).render(h`<${App}/>`);
 </script>
 
 </body>
