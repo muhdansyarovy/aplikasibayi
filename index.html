@@ -116,7 +116,7 @@ Pilihan class HANYA: hungry, belly_pain, burping, discomfort, tired, lonely, sca
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${window.__GROQ_KEY}` },
       body: JSON.stringify({
-        model: "llama3-8b-8192", 
+        model: "llama-3.1-8b-instant", 
         messages: [{ role: "system", content: sys }, { role: "user", content: "Data fitur:\n" + JSON.stringify(fs, null, 2) }],
         response_format: { type: "json_object" }, temperature: 0.2
       })
@@ -224,7 +224,7 @@ return(<div>
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
 {[{icon:"📋",t:"Langkah Praktis",d:"Panduan step-by-step",cl:"#0A84FF"},{icon:"🤖",t:"AI Kontekstual",d:"Rekomendasi dari Groq",cl:"#BF5AF2"},{icon:"⚠️",t:"Tanda Bahaya",d:"Kapan harus ke dokter",cl:"#FF453A"},{icon:"🎨",t:"Tips Visual",d:"Ilustrasi posisi & teknik",cl:"#30D158"}].map((f,i)=>(<div key={i} className="glass-inner" style={{padding:14}}><div style={{width:36,height:36,borderRadius:10,background:f.cl+"08",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:8}}>{f.icon}</div><div style={{fontWeight:600,fontSize:14,letterSpacing:"-0.2px"}}>{f.t}</div><div style={{fontSize:12,color:"#AEAEB2",marginTop:3,lineHeight:1.35}}>{f.d}</div></div>))}
 </div></div>
-<div className="glass" style={{padding:18,marginTop:10}}><div style={{fontWeight:600,fontSize:14,marginBottom:10}}>Spesifikasi Model</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 20px"}}>{[["Arsitektur","CNN-LSTM"],["Processing Unit","Groq LPU"],["LLM Model","Llama-3 8B"],["Mel Bands","128"],["Kelas","9"],["Kecepatan","~800ms"]].map(([k,v],i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}><span style={{fontSize:13,color:"#AEAEB2"}}>{k}</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:13,fontWeight:500}}>{v}</span></div>))}</div></div>
+<div className="glass" style={{padding:18,marginTop:10}}><div style={{fontWeight:600,fontSize:14,marginBottom:10}}>Spesifikasi Model</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 20px"}}>{[["Arsitektur","CNN-LSTM"],["Processing Unit","Groq LPU"],["LLM Model","Llama-3.1 8B"],["Mel Bands","128"],["Kelas","9"],["Kecepatan","~800ms"]].map(([k,v],i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}><span style={{fontSize:13,color:"#AEAEB2"}}>{k}</span><span style={{fontFamily:"'SF Mono',monospace",fontSize:13,fontWeight:500}}>{v}</span></div>))}</div></div>
 <p style={{textAlign:"center",marginTop:16,fontSize:12,color:"#C7C7CC"}}>Powered by Groq Cloud API</p>
 <button onClick={()=>setNeedKey(true)} style={{display:"block",margin:"12px auto 0",background:"none",border:"1px solid rgba(0,0,0,0.06)",borderRadius:10,padding:"8px 20px",fontSize:12,color:"#86868B",cursor:"pointer"}}>🔑 Atur Ulang API Key</button>
 </div>)}
