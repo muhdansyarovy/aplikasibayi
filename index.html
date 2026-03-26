@@ -198,17 +198,16 @@ useEffect(function(){
 var k=localStorage.getItem(“groq_key”);if(k){window.__GK=k;sAk(k.substring(0,8)+”…”);}
 if(!window.tf){sMs(“error”);sMe(“TF.js gagal dimuat.”);document.getElementById(“loading”).style.display=“none”;return;}
 var ld=document.getElementById(“ld-d”),lt=document.getElementById(“ld-t”),lr=document.getElementById(“ld-retry”);
-var t0=Date.now(),lti=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);if(lt)lt.textContent=s+“s”;if(s>40&&lr)lr.style.display=“inline-block”;},1000);
+var t0=Date.now(),lti=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);if(lt)lt.textContent=s+“s”;if(s>30&&lr)lr.style.display=“inline-block”;},1000);
 function ldOk(){clearInterval(lti);document.getElementById(“loading”).style.display=“none”;}
 function ldFail(m){clearInterval(lti);sMs(“error”);sMe(m);if(ld)ld.textContent=“Error: “+m;if(lr)lr.style.display=“inline-block”;}
-if(ld)ld.textContent=“Mengunduh YAMNet (~13MB)…”;
-var yto=setTimeout(function(){ldFail(“Timeout 60s. Cek koneksi internet.”);},60000);
+if(ld)ld.textContent=“Memuat YAMNet (~13MB)…”;
 tf.loadGraphModel(‘https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1’,{fromTFHub:true}).then(function(y){
-clearTimeout(yto);sYm(y);if(ld)ld.textContent=“Mengunduh Classifier…”;
-var r=’./tfjs_model/model.json’,a=window.location.origin+window.location.pathname.replace(//[^/]*$/,’’)+’/tfjs_model/model.json’;
-return tf.loadLayersModel(r).catch(function(){return tf.loadLayersModel(a);});
+sYm(y);if(ld)ld.textContent=“Memuat Classifier…”;
+var base=window.location.origin+window.location.pathname.replace(//[^/]*$/,’’);
+return tf.loadLayersModel(’./tfjs_model/model.json’).catch(function(){return tf.loadLayersModel(base+’/tfjs_model/model.json’);});
 }).then(function(c){sCm(c);sMs(“loaded”);ldOk();
-}).catch(function(e){clearTimeout(yto);ldFail(e.message);});
+}).catch(function(e){ldFail(e.message);});
 },[]);
 useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current&&acR.current.state!==“closed”)acR.current.close();};},[]);
 
