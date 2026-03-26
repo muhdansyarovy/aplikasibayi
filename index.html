@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Baby Cry Translator — v2</title>
+<title>Baby Cry Translator — v3</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A84FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2v20M17 7v10M7 7v10M22 10v4M2 10v4'/></svg>">
@@ -31,11 +31,10 @@ canvas{display:block}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;font-size:16px;color:var(--txm);flex-direction:column;gap:12px}
 #loading .sp{width:32px;height:32px;border:3px solid rgba(0,0,0,.08);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
 </style>
-<!-- Tambahan Script TensorFlow.js -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 </head>
 <body>
-<div id="loading"><div class="sp"></div><span>Memuat Model & Sistem...</span></div>
+<div id="loading"><div class="sp"></div><span>Memuat Model TFJS...</span></div>
 <div id="root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -78,53 +77,188 @@ function analyzeEnv(fh){var n=fh.length;if(n<5)return{trend:"flat",peakPos:0.5,d
 function aggregate(fh){var n=fh.length;if(n<5)return null;var avg=function(k){return fh.reduce(function(s,f){return s+(f[k]||0);},0)/n;};var f0s=fh.map(function(f){return f.f0;}).filter(function(v){return v>0;});var mF0=f0s.length?f0s.reduce(function(s,v){return s+v;},0)/f0s.length:0;var f0CV=mF0>0?Math.sqrt(f0s.reduce(function(s,v){return s+Math.pow(v-mF0,2);},0)/(f0s.length||1))/mF0:0;var bo=detectBouts(fh),rh=computeRhythm(bo),env=analyzeEnv(fh);var tBE=avg("bassEnergy")+avg("lowMidEnergy")+avg("midEnergy")+avg("highMidEnergy")+avg("presenceEnergy")+avg("brillianceEnergy");
 return{pitch:{meanF0:+mF0.toFixed(1),maxF0:f0s.length?Math.max.apply(null,f0s):0,minF0:f0s.length?Math.min.apply(null,f0s):0,f0CV:+f0CV.toFixed(3),voicedR:+(f0s.length/n).toFixed(2)},vq:{jitter:+avg("jitter").toFixed(4),shimmer:+avg("shimmer").toFixed(4),hnr:+avg("hnr").toFixed(2)},rhythm:rh,intensity:{trend:env.trend,peakPos:env.peakPos,dynRange:env.dynRange,meanAmp:+avg("avgAmplitude").toFixed(1),maxAmp:Math.max.apply(null,fh.map(function(f){return f.maxAmplitude;}))},spectral:{bassR:tBE>0?+(avg("bassEnergy")/tBE).toFixed(3):0,midR:tBE>0?+(avg("midEnergy")/tBE).toFixed(3):0,presR:tBE>0?+(avg("presenceEnergy")/tBE).toFixed(3):0},temporal:{frames:n,dur:+(n*0.2).toFixed(1),cryDur:+bo.reduce(function(s,b){return s+b.dur;},0).toFixed(1),bouts:bo.length}};}
 
-function ruleClassify(ag){var sc={hungry:0,belly_pain:0,burping:0,discomfort:0,tired:0,lonely:0,scared:0,cold_hot:0,unknown:0};var p=ag.pitch,vq=ag.vq,rh=ag.rhythm,it=ag.intensity,sp=ag.spectral;
-if(rh.score>0.4)sc.hungry+=20;if(rh.score>0.6)sc.hungry+=15;if(p.meanF0>250&&p.meanF0<500)sc.hungry+=15;if(it.trend==="rising")sc.hungry+=20;if(vq.hnr>5)sc.hungry+=10;if(vq.jitter<0.08)sc.hungry+=10;if(rh.boutCount>=3)sc.hungry+=10;
-if(p.meanF0>450)sc.belly_pain+=20;if(p.meanF0>550)sc.belly_pain+=10;if(it.meanAmp>30)sc.belly_pain+=15;if(vq.jitter>0.1)sc.belly_pain+=15;if(vq.hnr<3)sc.belly_pain+=10;if(sp.presR>0.15)sc.belly_pain+=10;
-if(rh.avgBoutDur<1.5&&rh.avgBoutDur>0)sc.burping+=20;if(p.meanF0<350&&p.meanF0>0)sc.burping+=15;if(it.meanAmp<20)sc.burping+=10;if(sp.bassR>0.3)sc.burping+=15;if(vq.shimmer>0.15)sc.burping+=10;
-if(it.trend==="fluctuating")sc.discomfort+=20;if(rh.pattern==="semi_rhythmic")sc.discomfort+=15;if(p.f0CV>0.2&&p.f0CV<0.5)sc.discomfort+=15;
-if(it.trend==="falling")sc.tired+=25;if(it.meanAmp<18)sc.tired+=15;if(p.meanF0>200&&p.meanF0<400)sc.tired+=10;if(vq.hnr>4)sc.tired+=10;
-if(it.meanAmp<22)sc.lonely+=15;if(rh.avgGap>2)sc.lonely+=20;if(rh.boutCount>=2&&rh.boutCount<=5)sc.lonely+=10;
-if(it.peakPos<0.25)sc.scared+=25;if(p.meanF0>500)sc.scared+=15;if(it.maxAmp>50)sc.scared+=15;if(it.dynRange>30)sc.scared+=15;
-if(it.trend==="flat")sc.cold_hot+=20;if(rh.score>0.3&&rh.score<0.6)sc.cold_hot+=15;if(p.f0CV<0.15)sc.cold_hot+=15;
-var mx=Math.max.apply(null,Object.values(sc))||1;return Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return{class:e[0],confidence:Math.round(e[1]/mx*100)};});}
+/* ==== TFJS-FIRST CLASSIFICATION (Rule-Based Removed) ==== */
 
-function classify(fh, tfModel){return new Promise(function(resolve,reject){if(fh.length<5){reject(new Error("Data tidak cukup"));return;}var ag=aggregate(fh);if(!ag){reject(new Error("Gagal"));return;}
-var rb=ruleClassify(ag);
-
-// Integrasi TFJS Deep Learning (1024 input features)
-var dlPreds = null;
-if(tfModel){
-    try{
-        var flat = [];
-        for(var i=0; i<32; i++){
-            if(i < fh.length) { flat.push(...fh[i].melEnergies); } 
-            else { for(var j=0; j<32; j++) flat.push(0); } // Pad with zeros to 1024
+function buildTFJSInput(fh){
+    /* Bangun input tensor [1, 1024] dari seluruh frame.
+       Strategi: ambil 32 frame merata (temporal pooling), bukan hanya 32 pertama.
+       Setiap frame punya 32 mel energies → 32×32 = 1024 features. */
+    var TARGET_FRAMES = 32;
+    var MEL_BINS = 32;
+    var selected = [];
+    
+    if(fh.length <= TARGET_FRAMES){
+        // Pad: gunakan semua frame + repeat last frame
+        selected = fh.slice();
+        while(selected.length < TARGET_FRAMES){
+            selected.push(selected[selected.length - 1]);
         }
-        if(flat.length > 1024) flat = flat.slice(0, 1024);
-        
-        var inputTensor = tf.tensor2d([flat], [1, 1024]);
-        var out = tfModel.predict(inputTensor);
-        var probs = out.dataSync();
-        var maxIdx = probs.indexOf(Math.max(...probs));
-        var dlClass = CLASSES[maxIdx];
-        
-        dlPreds = {class: dlClass, confidence: Math.round(probs[maxIdx]*100), acoustic_evidence: "Prediksi Deep Learning (TFJS HDF5)"};
-        inputTensor.dispose(); out.dispose();
-        
-        if(dlPreds && dlPreds.confidence > 20){ // Jika TFJS cukup yakin, jadikan prioritas utama
-            var exist = rb.find(function(r){return r.class === dlPreds.class});
-            if(exist) exist.confidence = dlPreds.confidence;
-            else rb.unshift(dlPreds);
-            rb.sort(function(a,b){return b.confidence - a.confidence});
+    } else {
+        // Subsample merata dari seluruh rekaman
+        var step = fh.length / TARGET_FRAMES;
+        for(var i = 0; i < TARGET_FRAMES; i++){
+            var idx = Math.min(Math.floor(i * step), fh.length - 1);
+            selected.push(fh[idx]);
         }
-    }catch(e){console.warn("TFJS error, fallback to Rule-Based", e);}
+    }
+    
+    var flat = [];
+    for(var i = 0; i < TARGET_FRAMES; i++){
+        var mel = selected[i].melEnergies;
+        for(var j = 0; j < MEL_BINS; j++){
+            flat.push(j < mel.length ? mel[j] : 0);
+        }
+    }
+    
+    // Min-Max Normalization ke [0, 1]
+    var mn = Infinity, mx = -Infinity;
+    for(var i = 0; i < flat.length; i++){
+        if(flat[i] < mn) mn = flat[i];
+        if(flat[i] > mx) mx = flat[i];
+    }
+    var rng = mx - mn || 1;
+    for(var i = 0; i < flat.length; i++){
+        flat[i] = (flat[i] - mn) / rng;
+    }
+    
+    return flat;
 }
 
-if(!window.__GROQ_KEY){var topCls=rb[0]?rb[0].class:"unknown";var dbI=CRY_DB[topCls]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence=r.acoustic_evidence||("F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB, pola "+ag.rhythm.pattern);return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbI.desc+" "+dbI.steps[0].a+": "+dbI.steps[0].d+" "+dbI.steps[1].a+": "+dbI.steps[1].d,urgency:ag.pitch.meanF0>550?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});return;}
-var sys='Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil pre-klasifikasi. Tugas Anda: 1) Evaluasi apakah kelas prediksi cocok dengan fitur akustik. 2) Tulis analisis akustik NYATA berdasarkan data (contoh: "Frekuensi dasar terdeteksi pada 283 Hz dengan jitter tinggi 87.8% menunjukkan tangisan tidak stabil, khas pola kelelahan. HNR 5.87 dB menandakan komponen noise signifikan."). 3) Tulis saran NYATA dan spesifik (contoh: "Coba redupkan lampu dan ayun bayi perlahan. Jika sudah lebih dari 1.5 jam sejak tidur terakhir, kemungkinan besar bayi butuh tidur."). JANGAN tulis placeholder seperti "2 kalimat" — tulis konten sesungguhnya. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis akustik nyata dalam bahasa Indonesia","contextual_advice":"tulis saran praktis nyata dalam bahasa Indonesia","urgency":"low|medium|high"} Maksimal 3 prediksi.';
-var ctrl=new AbortController(),tid=setTimeout(function(){ctrl.abort();},15000);
-fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GROQ_KEY},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},{role:"user",content:"Data akustik teragregasi:\n"+JSON.stringify(ag,null,1)+"\n\nHasil pre-klasifikasi (TFJS/Rule-based):\n"+JSON.stringify(rb,null,1)+"\n\nBerikan analisis dan saran yang spesifik berdasarkan data di atas."}],response_format:{type:"json_object"},temperature:0.4,max_tokens:800}),signal:ctrl.signal}).then(function(r){clearTimeout(tid);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);var p=JSON.parse(d.choices[0].message.content);p._diag={rb:rb,ag:ag};resolve(p);}).catch(function(e){clearTimeout(tid);var topClass=rb[0]?rb[0].class:"unknown";var dbItem=CRY_DB[topClass]||CRY_DB.unknown;resolve({predictions:rb.map(function(r){r.acoustic_evidence="Analisis pre-klasifikasi: F0="+ag.pitch.meanF0+"Hz, jitter="+(ag.vq.jitter*100).toFixed(1)+"%, HNR="+ag.vq.hnr+"dB";return r;}),analysis:"Frekuensi dasar rata-rata "+ag.pitch.meanF0+" Hz dengan pola "+ag.rhythm.pattern+". Intensitas "+ag.intensity.trend+" (rata-rata "+ag.intensity.meanAmp+"). Jitter "+(ag.vq.jitter*100).toFixed(1)+"% dan HNR "+ag.vq.hnr+" dB. "+ag.temporal.bouts+" episode tangisan terdeteksi selama "+ag.temporal.dur+" detik rekaman.",contextual_advice:dbItem.desc+" "+dbItem.steps[0].a+": "+dbItem.steps[0].d,urgency:ag.pitch.meanF0>550&&ag.intensity.maxAmp>50?"high":ag.intensity.meanAmp>30?"medium":"low",_diag:{rb:rb,ag:ag,fallback:true}});});});}
+function tfjsClassify(fh, tfModel){
+    /* Klasifikasi menggunakan TFJS model saja.
+       Return: array of {class, confidence, acoustic_evidence} sorted desc. */
+    var flat = buildTFJSInput(fh);
+    var inputTensor = tf.tensor2d([flat], [1, 1024]);
+    var out = tfModel.predict(inputTensor);
+    var probs = out.dataSync();
+    inputTensor.dispose();
+    out.dispose();
+    
+    // Bangun result sorted by probability
+    var results = [];
+    for(var i = 0; i < CLASSES.length; i++){
+        results.push({
+            class: CLASSES[i],
+            confidence: Math.round(probs[i] * 100),
+            acoustic_evidence: "Deep Learning prediction (prob=" + (probs[i]*100).toFixed(1) + "%)"
+        });
+    }
+    results.sort(function(a, b){ return b.confidence - a.confidence; });
+    
+    // Ambil top 3
+    return results.slice(0, 3);
+}
+
+function classify(fh, tfModel){
+    return new Promise(function(resolve, reject){
+        if(fh.length < 5){
+            reject(new Error("Data tidak cukup. Rekam minimal 3 detik."));
+            return;
+        }
+        
+        var ag = aggregate(fh);
+        if(!ag){
+            reject(new Error("Gagal mengagregasi fitur akustik."));
+            return;
+        }
+        
+        // === TFJS sebagai PRIMARY classifier ===
+        if(!tfModel){
+            reject(new Error("Model TFJS belum dimuat. Pastikan folder tfjs_model/ tersedia."));
+            return;
+        }
+        
+        var dlPreds;
+        try {
+            dlPreds = tfjsClassify(fh, tfModel);
+        } catch(e) {
+            reject(new Error("TFJS inference gagal: " + e.message));
+            return;
+        }
+        
+        // Cek confidence: jika top prediction < 15% (hampir random), tandai unknown
+        if(dlPreds[0].confidence < 15){
+            dlPreds = [{class:"unknown", confidence:50, acoustic_evidence:"Model tidak yakin — semua kelas memiliki probabilitas serupa."}];
+        }
+        
+        // === LLM Refinement (opsional, jika ada API key) ===
+        if(!window.__GROQ_KEY){
+            var topCls = dlPreds[0].class;
+            var dbI = CRY_DB[topCls] || CRY_DB.unknown;
+            resolve({
+                predictions: dlPreds.map(function(r){
+                    r.acoustic_evidence = r.acoustic_evidence + " | F0=" + ag.pitch.meanF0 + "Hz, jitter=" + (ag.vq.jitter*100).toFixed(1) + "%, HNR=" + ag.vq.hnr + "dB";
+                    return r;
+                }),
+                analysis: "Frekuensi dasar rata-rata " + ag.pitch.meanF0 + " Hz dengan pola " + ag.rhythm.pattern + ". Intensitas " + ag.intensity.trend + " (rata-rata " + ag.intensity.meanAmp + "). Jitter " + (ag.vq.jitter*100).toFixed(1) + "% dan HNR " + ag.vq.hnr + " dB. " + ag.temporal.bouts + " episode tangisan terdeteksi selama " + ag.temporal.dur + " detik rekaman.",
+                contextual_advice: dbI.desc + " " + dbI.steps[0].a + ": " + dbI.steps[0].d + " " + dbI.steps[1].a + ": " + dbI.steps[1].d,
+                urgency: ag.pitch.meanF0 > 550 ? "high" : ag.intensity.meanAmp > 30 ? "medium" : "low",
+                _diag: { ag: ag, method: "tfjs_only" }
+            });
+            return;
+        }
+        
+        // LLM refinement with TFJS results
+        var sys = 'Anda adalah dokter anak AI. Anda menerima data akustik tangisan bayi dan hasil klasifikasi dari model Deep Learning. Tugas Anda: 1) Evaluasi apakah kelas prediksi Deep Learning cocok dengan fitur akustik. 2) Tulis analisis akustik NYATA berdasarkan data (contoh: "Frekuensi dasar terdeteksi pada 283 Hz dengan jitter tinggi 87.8% menunjukkan tangisan tidak stabil, khas pola kelelahan. HNR 5.87 dB menandakan komponen noise signifikan."). 3) Tulis saran NYATA dan spesifik. JANGAN tulis placeholder. Output HARUS JSON valid: {"predictions":[{"class":"hungry|belly_pain|burping|discomfort|tired|lonely|scared|cold_hot|unknown","confidence":0-100,"acoustic_evidence":"jelaskan fitur pendukung"}],"analysis":"tulis analisis akustik nyata dalam bahasa Indonesia","contextual_advice":"tulis saran praktis nyata dalam bahasa Indonesia","urgency":"low|medium|high"} Maksimal 3 prediksi. PENTING: Prioritaskan hasil Deep Learning, koreksi hanya jika bukti akustik sangat bertentangan.';
+        
+        var ctrl = new AbortController(), tid = setTimeout(function(){ ctrl.abort(); }, 15000);
+        fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "Authorization": "Bearer " + window.__GROQ_KEY},
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    {role: "system", content: sys},
+                    {role: "user", content: "Data akustik teragregasi:\n" + JSON.stringify(ag, null, 1) + "\n\nHasil klasifikasi Deep Learning (TFJS):\n" + JSON.stringify(dlPreds, null, 1) + "\n\nBerikan analisis dan saran yang spesifik berdasarkan data di atas."}
+                ],
+                response_format: {type: "json_object"},
+                temperature: 0.4,
+                max_tokens: 800
+            }),
+            signal: ctrl.signal
+        }).then(function(r){
+            clearTimeout(tid);
+            return r.json();
+        }).then(function(d){
+            if(d.error) throw new Error(d.error.message);
+            var p;
+            try {
+                p = JSON.parse(d.choices[0].message.content);
+            } catch(parseErr) {
+                throw new Error("LLM response bukan JSON valid");
+            }
+            // Validasi: pastikan predictions berisi kelas yang valid
+            if(p && p.predictions && Array.isArray(p.predictions)){
+                p.predictions = p.predictions.filter(function(pr){
+                    return CLASSES.indexOf(pr.class) !== -1 || pr.class === "unknown";
+                });
+                if(p.predictions.length === 0) p.predictions = dlPreds;
+            } else {
+                p = {predictions: dlPreds};
+            }
+            p._diag = {ag: ag, method: "tfjs+llm"};
+            if(!p.analysis) p.analysis = "";
+            if(!p.contextual_advice) p.contextual_advice = "";
+            if(!p.urgency) p.urgency = "low";
+            resolve(p);
+        }).catch(function(e){
+            clearTimeout(tid);
+            // Fallback ke TFJS results tanpa LLM
+            var topClass = dlPreds[0].class;
+            var dbItem = CRY_DB[topClass] || CRY_DB.unknown;
+            resolve({
+                predictions: dlPreds.map(function(r){
+                    r.acoustic_evidence = r.acoustic_evidence + " | F0=" + ag.pitch.meanF0 + "Hz, HNR=" + ag.vq.hnr + "dB";
+                    return r;
+                }),
+                analysis: "Frekuensi dasar rata-rata " + ag.pitch.meanF0 + " Hz dengan pola " + ag.rhythm.pattern + ". Intensitas " + ag.intensity.trend + " (rata-rata " + ag.intensity.meanAmp + "). Jitter " + (ag.vq.jitter*100).toFixed(1) + "% dan HNR " + ag.vq.hnr + " dB. " + ag.temporal.bouts + " episode tangisan terdeteksi selama " + ag.temporal.dur + " detik rekaman.",
+                contextual_advice: dbItem.desc + " " + dbItem.steps[0].a + ": " + dbItem.steps[0].d,
+                urgency: ag.pitch.meanF0 > 550 && ag.intensity.maxAmp > 50 ? "high" : ag.intensity.meanAmp > 30 ? "medium" : "low",
+                _diag: {ag: ag, method: "tfjs_only_llm_failed", error: e.message}
+            });
+        });
+    });
+}
 
 function Spectrogram(props){var ref=useRef(null);useEffect(function(){if(!ref.current||!props.data.length)return;var c=ref.current,x=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;x.scale(d,d);var W=r.width,H=r.height,n=props.data.length,mb=props.data[0].melEnergies.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;props.data.forEach(function(f){f.melEnergies.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=props.data[f].melEnergies,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle="rgba(10,132,255,"+Math.pow(nm,0.7)*0.8+")";x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[props.data]);
 return html`<div style=${{position:"relative"}}><canvas ref=${ref} style=${{width:"100%",height:100,borderRadius:16,border:"1px solid rgba(0,0,0,0.04)",background:"rgba(255,255,255,0.4)"}}/>${props.rec&&html`<div style=${{position:"absolute",top:8,right:10,background:"#FF453A",borderRadius:20,padding:"4px 12px",fontSize:11,color:"#FFF",fontWeight:700,animation:"blink 1.5s infinite",display:"flex",alignItems:"center",gap:4}}><div style=${{width:6,height:6,borderRadius:3,background:"#FFF"}}/>REC</div>`}</div>`;}
@@ -137,7 +271,8 @@ return html`<div className="gl" style=${{overflow:"hidden",marginTop:6}}><button
 ${open&&html`<div style=${{padding:"0 16px 16px",animation:"fadeIn 0.3s"}}>
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>${[["F0",ag.pitch.meanF0+" Hz"],["Jitter",(ag.vq.jitter*100).toFixed(1)+"%"],["HNR",ag.vq.hnr+" dB"]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>${[["Ritme",(ag.rhythm.score*100).toFixed(0)+"%"],["Pola",ag.rhythm.pattern],["Bout",ag.rhythm.boutCount+"x"],["Intensitas",ag.intensity.trend]].map(function(it,i){return html`<div key=${i} className="gi" style=${{padding:"10px 12px",textAlign:"center"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${it[0]}</div><div style=${{fontSize:14,fontWeight:700,marginTop:2}}>${it[1]}</div></div>`;})}</div>
-${props.diag.fallback&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:12,color:"#FF9F0A",fontWeight:600}}>Fallback: Rule-based (tanpa LLM)</div>`}
+${props.diag.method&&html`<div style=${{marginTop:12,padding:"10px 14px",borderRadius:12,background:props.diag.method==="tfjs+llm"?"rgba(50,215,75,0.08)":"rgba(10,132,255,0.08)",border:"1px solid "+(props.diag.method==="tfjs+llm"?"rgba(50,215,75,0.15)":"rgba(10,132,255,0.15)"),fontSize:12,color:props.diag.method==="tfjs+llm"?"#32D74B":"#0A84FF",fontWeight:600}}>${props.diag.method==="tfjs+llm"?"Pipeline: TFJS Deep Learning + LLM Refinement":props.diag.method==="tfjs_only"?"Pipeline: TFJS Deep Learning (tanpa LLM)":"Pipeline: "+props.diag.method}</div>`}
+${props.diag.error&&html`<div style=${{marginTop:8,padding:"8px 14px",borderRadius:12,background:"rgba(255,159,10,0.08)",border:"1px solid rgba(255,159,10,0.15)",fontSize:11,color:"#FF9F0A"}}>LLM fallback: ${props.diag.error}</div>`}
 </div>`}</div>`;}
 
 function chatWithAI(question,context){
@@ -226,51 +361,69 @@ function Urgency(props){var m={high:{bg:"rgba(255,69,58,0.1)",br:"rgba(255,69,58
 return html`<div className="gl" style=${{background:c.bg,border:"1px solid "+c.br,padding:"12px 20px",display:"flex",alignItems:"center",gap:12}}><${Icon} name=${c.ic} color=${c.cl} size=${24}/><div><div style=${{fontSize:11,color:c.cl,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px"}}>Urgensi</div><div style=${{fontSize:14,fontWeight:500,marginTop:2}}>${c.tx}</div></div></div>`;}
 
 function KeyModal(props){var _k=useState(""),key=_k[0],setKey=_k[1];var ck=key.trim(),ok=ck.indexOf("gsk_")===0;
-return html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20,animation:"fadeIn 0.3s"}}><div className="gl" style=${{padding:32,maxWidth:380,width:"100%",background:"rgba(255,255,255,0.85)"}}><div style=${{display:"flex",justifyContent:"center",marginBottom:16}}><${Icon} name="key" size=${40} strokeWidth=${1.5}/></div><h2 style=${{fontSize:22,fontWeight:700,textAlign:"center",marginBottom:8}}>API Key</h2><p style=${{fontSize:14,color:"#8E8E93",textAlign:"center",marginBottom:24}}>Masukkan API Key Groq.</p><input type="password" value=${key} onInput=${function(e){setKey(e.target.value);}} placeholder="gsk_..." style=${{width:"100%",padding:"16px 20px",borderRadius:16,border:"1px solid rgba(0,0,0,0.1)",fontSize:16,background:"rgba(0,0,0,0.03)",outline:"none",marginBottom:20}}/><button onClick=${function(){if(ok){window.__GROQ_KEY=ck;try{localStorage.setItem("groq_key",ck);}catch(e){}props.onSave(ck);}}} style=${{width:"100%",padding:16,borderRadius:16,border:"none",background:"#0A84FF",color:"#FFF",fontSize:17,fontWeight:600,cursor:ok?"pointer":"not-allowed",opacity:ok?1:0.4}}>Simpan</button></div></div>`;}
+return html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(24px)",WebkitBackdropFilter:"blur(24px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20,animation:"fadeIn 0.3s"}}><div className="gl" style=${{padding:32,maxWidth:380,width:"100%",background:"rgba(255,255,255,0.85)"}}><div style=${{display:"flex",justifyContent:"center",marginBottom:16}}><${Icon} name="key" size=${40} strokeWidth=${1.5}/></div><h2 style=${{fontSize:22,fontWeight:700,textAlign:"center",marginBottom:8}}>API Key</h2><p style=${{fontSize:14,color:"#8E8E93",textAlign:"center",marginBottom:6}}>Masukkan API Key Groq untuk LLM Refinement.</p><p style=${{fontSize:12,color:"#C7C7CC",textAlign:"center",marginBottom:20}}>Opsional — tanpa key, TFJS model tetap berjalan.</p><input type="password" value=${key} onInput=${function(e){setKey(e.target.value);}} placeholder="gsk_..." style=${{width:"100%",padding:"16px 20px",borderRadius:16,border:"1px solid rgba(0,0,0,0.1)",fontSize:16,background:"rgba(0,0,0,0.03)",outline:"none",marginBottom:20}}/><button onClick=${function(){if(ok){window.__GROQ_KEY=ck;try{localStorage.setItem("groq_key",ck);}catch(e){}props.onSave(ck);}}} style=${{width:"100%",padding:16,borderRadius:16,border:"none",background:"#0A84FF",color:"#FFF",fontSize:17,fontWeight:600,cursor:ok?"pointer":"not-allowed",opacity:ok?1:0.4}}>Simpan</button></div></div>`;}
 
 function App(){
 var _p=useState("idle"),phase=_p[0],setPhase=_p[1],_e=useState(0),elapsed=_e[0],setElapsed=_e[1],_sd=useState([]),specData=_sd[0],setSpecData=_sd[1],_r=useState(null),results=_r[0],setResults=_r[1],_aa=useState(""),aiAn=_aa[0],setAiAn=_aa[1],_av=useState(""),aiAd=_av[0],setAiAd=_av[1],_u=useState("low"),urg=_u[0],setUrg=_u[1],_er=useState(null),err=_er[0],setErr=_er[1],_nk=useState(false),needKey=_nk[0],setNeedKey=_nk[1],_ak=useState(""),akd=_ak[0],setAkd=_ak[1],_dg=useState(null),diag=_dg[0],setDiag=_dg[1];
 var _tf=useState(null),tfModel=_tf[0],setTfModel=_tf[1];
+var _ml=useState("loading"),modelStatus=_ml[0],setModelStatus=_ml[1];
 var msR=useRef(null),acR=useRef(null),anR=useRef(null),fhR=useRef([]),tmR=useRef(null),clR=useRef(null),phR=useRef("idle");
 
 useEffect(function(){
     var k=localStorage.getItem("groq_key");
     if(k){window.__GROQ_KEY=k;setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}
     
-    // Load TFJS Model
     if(window.tf){
         tf.loadLayersModel('./tfjs_model/model.json').then(function(m){
             setTfModel(m);
-            console.log("TFJS Model loaded successfully!");
+            setModelStatus("loaded");
+            console.log("TFJS Model loaded! Input shape:", m.inputs[0].shape, "Output shape:", m.outputs[0].shape);
             var el=document.getElementById("loading");if(el)el.style.display="none";
         }).catch(function(e){
-            console.warn("TFJS Model failed to load. Ensure folder structure is correct. Proceeding with Rule-Based Fallback.", e);
+            console.error("TFJS Model gagal dimuat:", e);
+            setModelStatus("error");
             var el=document.getElementById("loading");if(el)el.style.display="none";
         });
     } else {
+        setModelStatus("no_tf");
         var el=document.getElementById("loading");if(el)el.style.display="none";
     }
 },[]);
 
 useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();};},[]);
 
-function start(){setErr(null);setResults(null);setAiAn("");setAiAd("");setSpecData([]);setDiag(null);fhR.current=[];
-navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;var src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0.7;src.connect(an);anR.current=an;setPhase("recording");phR.current="recording";setElapsed(0);tmR.current=setInterval(function(){setElapsed(function(e){return e+1;});},1000);clR.current=setInterval(function(){var f=extractFeatures(an,ac.sampleRate);
-// SENSITIVITAS DITURUNKAN KE 0.5 AGAR RENGEKAN TEREKAM
-if(f.avgAmplitude>0.5){fhR.current.push(f);setSpecData(function(p){return p.concat([f]);});}},200);}).catch(function(e){setErr(e.name==="NotAllowedError"?"Izin mikrofon ditolak.":"Error: "+e.message);});}
+function start(){
+    if(modelStatus !== "loaded"){
+        setErr("Model TFJS belum dimuat. Pastikan folder tfjs_model/ berisi model.json dan file weights.");
+        return;
+    }
+    setErr(null);setResults(null);setAiAn("");setAiAd("");setSpecData([]);setDiag(null);fhR.current=[];
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;var src=ac.createMediaStreamSource(s),an=ac.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0.7;src.connect(an);anR.current=an;setPhase("recording");phR.current="recording";setElapsed(0);tmR.current=setInterval(function(){setElapsed(function(e){return e+1;});},1000);clR.current=setInterval(function(){var f=extractFeatures(an,ac.sampleRate);
+    if(f.avgAmplitude>0.5){fhR.current.push(f);setSpecData(function(p){return p.concat([f]);});}},200);}).catch(function(e){setErr(e.name==="NotAllowedError"?"Izin mikrofon ditolak.":"Error: "+e.message);});
+}
 
-function stop(){if(phR.current!=="recording")return;phR.current="analyzing";clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();setPhase("analyzing");if(fhR.current.length<5){setErr("Rekam min 3 detik dengan tangisan/rengekan.");setPhase("idle");phR.current="idle";return;}if(!window.__GROQ_KEY){setNeedKey(true);setPhase("idle");phR.current="idle";return;}
-classify(fhR.current, tfModel).then(function(r){if(r&&r.predictions){setResults(r.predictions);setAiAn(r.analysis||"");setAiAd(r.contextual_advice||"");setUrg(r.urgency||"low");setDiag(r._diag||null);setPhase("results");phR.current="results";}else{setErr("Gagal.");setPhase("idle");phR.current="idle";}}).catch(function(e){setErr(e.message);setPhase("idle");phR.current="idle";});}
+function stop(){if(phR.current!=="recording")return;phR.current="analyzing";clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();setPhase("analyzing");if(fhR.current.length<5){setErr("Rekam min 3 detik dengan tangisan/rengekan.");setPhase("idle");phR.current="idle";return;}
+classify(fhR.current, tfModel).then(function(r){if(r&&r.predictions){setResults(r.predictions);setAiAn(r.analysis||"");setAiAd(r.contextual_advice||"");setUrg(r.urgency||"low");setDiag(r._diag||null);setPhase("results");phR.current="results";}else{setErr("Gagal menganalisis.");setPhase("idle");phR.current="idle";}}).catch(function(e){setErr(e.message);setPhase("idle");phR.current="idle";});}
 
 function reset(){setPhase("idle");phR.current="idle";setResults(null);setAiAn("");setAiAd("");setSpecData([]);setElapsed(0);setErr(null);setDiag(null);}
 function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
 
+var modelBadge = modelStatus === "loaded" 
+    ? {bg:"rgba(50,215,75,0.1)",br:"rgba(50,215,75,0.2)",cl:"#32D74B",tx:"Model TFJS Aktif",dot:true}
+    : modelStatus === "loading"
+    ? {bg:"rgba(10,132,255,0.1)",br:"rgba(10,132,255,0.2)",cl:"#0A84FF",tx:"Memuat Model...",dot:false}
+    : {bg:"rgba(255,69,58,0.1)",br:"rgba(255,69,58,0.2)",cl:"#FF453A",tx:"Model Tidak Ditemukan",dot:false};
+
 return html`<div>
 ${needKey&&html`<${KeyModal} onSave=${function(k){setNeedKey(false);if(k)setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}}/>`}
 <div style=${{textAlign:"center",padding:"56px 24px 24px",animation:"fadeIn 0.8s"}}>
-<div className="pill" style=${{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(10,132,255,0.1)",border:"1px solid rgba(10,132,255,0.15)",padding:"6px 16px",marginBottom:20}}><div style=${{width:6,height:6,borderRadius:"50%",background:"#0A84FF"}}/><span style=${{fontSize:12,fontWeight:700,color:"#0A84FF",letterSpacing:"0.5px"}}>DEEPINFANT v2</span></div>
+<div className="pill" style=${{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(191,90,242,0.1)",border:"1px solid rgba(191,90,242,0.15)",padding:"6px 16px",marginBottom:20}}><div style=${{width:6,height:6,borderRadius:"50%",background:"#BF5AF2"}}/><span style=${{fontSize:12,fontWeight:700,color:"#BF5AF2",letterSpacing:"0.5px"}}>DEEPINFANT v3</span></div>
 <h1 style=${{fontWeight:800,fontSize:38,margin:0,letterSpacing:"-1.2px",lineHeight:1.1}}>Baby Cry<br/>Translator</h1>
-<p style=${{fontSize:16,color:"#8E8E93",marginTop:10,fontWeight:500}}>Hybrid Acoustic + AI Analysis</p></div>
+<p style=${{fontSize:16,color:"#8E8E93",marginTop:10,fontWeight:500}}>TFJS Deep Learning + LLM Analysis</p>
+
+<div className="pill" style=${{display:"inline-flex",alignItems:"center",gap:6,background:modelBadge.bg,border:"1px solid "+modelBadge.br,padding:"6px 16px",marginTop:14}}>${modelBadge.dot&&html`<div style=${{width:8,height:8,borderRadius:4,background:modelBadge.cl,animation:"pulseGlow 2s infinite"}}/>`}<span style=${{fontSize:12,fontWeight:700,color:modelBadge.cl}}>${modelBadge.tx}</span></div>
+</div>
+
 <div style=${{maxWidth:460,margin:"0 auto",padding:"0 20px 48px"}}>
 
 <div style=${{textAlign:"center",margin:"10px 0 32px",height:140,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -285,10 +438,11 @@ ${phase==="recording"&&html`<div style=${{marginBottom:16,animation:"fadeIn 0.4s
 ${specData.length>0&&html`<div style=${{marginBottom:20,animation:"fadeIn 0.4s"}}><div style=${{fontSize:12,color:"#8E8E93",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:"1px"}}>Mel-Spectrogram</div><${Spectrogram} data=${specData} rec=${phase==="recording"}/></div>`}
 
 <div style=${{textAlign:"center",margin:"24px 0"}}>
-${phase==="idle"&&html`<button onClick=${start} style=${{background:"#0A84FF",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:"pointer",boxShadow:"0 8px 24px rgba(10,132,255,0.3)",width:"100%"}}>Mulai Rekam</button>`}
+${phase==="idle"&&html`<button onClick=${start} disabled=${modelStatus!=="loaded"} style=${{background:modelStatus==="loaded"?"#0A84FF":"#C7C7CC",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:modelStatus==="loaded"?"pointer":"not-allowed",boxShadow:modelStatus==="loaded"?"0 8px 24px rgba(10,132,255,0.3)":"none",width:"100%",opacity:modelStatus==="loaded"?1:0.6}}>Mulai Rekam</button>`}
 ${phase==="recording"&&html`<button onClick=${stop} style=${{background:"#FF453A",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:"pointer",width:"100%"}}>Berhenti & Analisis</button>`}
 ${phase==="analyzing"&&html`<div style=${{height:6,borderRadius:3,overflow:"hidden",background:"rgba(0,0,0,0.05)",width:"60%",margin:"0 auto"}}><div style=${{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,#0A84FF,#BF5AF2,#FF375F,transparent)",backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/></div>`}
-${phase==="idle"&&!err&&html`<p style=${{fontSize:14,color:"#8E8E93",marginTop:16,fontWeight:500}}>Dekatkan mikrofon · Min 3 detik</p>`}
+${phase==="idle"&&!err&&modelStatus==="loaded"&&html`<p style=${{fontSize:14,color:"#8E8E93",marginTop:16,fontWeight:500}}>Dekatkan mikrofon · Min 3 detik</p>`}
+${phase==="idle"&&modelStatus==="error"&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginTop:16,textAlign:"left"}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Model Tidak Ditemukan</span></div><p style=${{fontSize:13,color:"#48484A",margin:0,lineHeight:1.5}}>Pastikan folder <b>tfjs_model/</b> berisi <b>model.json</b> dan file weights (*.bin) di lokasi yang sama dengan file HTML ini. Model TFJS wajib untuk klasifikasi.</p></div>`}
 </div>
 
 ${err&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginBottom:20}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Error</span></div><p style=${{fontSize:14,color:"#48484A",margin:0}}>${err}</p>${phase!=="recording"&&html`<button onClick=${reset} style=${{marginTop:14,background:"#FFF",border:"1px solid rgba(255,69,58,0.2)",borderRadius:12,padding:"10px 24px",color:"#FF453A",fontSize:15,cursor:"pointer",fontWeight:600}}>Coba Lagi</button>`}</div>`}
@@ -305,14 +459,14 @@ ${aiAn&&html`<div className="gl" style=${{background:"rgba(10,132,255,0.06)",bor
 </div>`}
 
 ${phase==="idle"&&!err&&html`<div style=${{animation:"slideUp 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.1s both"}}>
-<div className="gl" style=${{padding:24,marginTop:16}}><div style=${{fontWeight:700,fontSize:18,marginBottom:18}}>Pipeline v2</div>
+<div className="gl" style=${{padding:24,marginTop:16}}><div style=${{fontWeight:700,fontSize:18,marginBottom:18}}>Pipeline v3</div>
 <div style=${{display:"flex",flexDirection:"column",gap:10}}>
-${[{s:"1",t:"Feature Extraction",d:"F0, Jitter, Shimmer, HNR, Mel-32",c:"#0A84FF"},{s:"2",t:"Neural Layer / Deep Learning",d:"Model HDF5 / sequential_11",c:"#BF5AF2"},{s:"3",t:"Rule-Based Fallback",d:"Scoring jika model Offline",c:"#FF9F0A"},{s:"4",t:"LLM Refinement",d:"Llama-3.3 70B evaluasi koherensi",c:"#32D74B"},{s:"5",t:"Tanya AI Lanjutan",d:"Chat follow-up gejala & saran",c:"#FF453A"}].map(function(st){return html`<div key=${st.s} className="gi" style=${{padding:14,display:"flex",gap:12}}><div style=${{width:28,height:28,borderRadius:8,background:st.c+"15",display:"flex",alignItems:"center",justifyContent:"center",color:st.c,fontSize:13,fontWeight:700,flexShrink:0}}>${st.s}</div><div><div style=${{fontWeight:600,fontSize:14}}>${st.t}</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>${st.d}</div></div></div>`;})}
+${[{s:"1",t:"Feature Extraction",d:"F0, Jitter, Shimmer, HNR, Mel-32 band",c:"#0A84FF"},{s:"2",t:"TFJS Deep Learning",d:"Model HDF5 → Klasifikasi 8 kelas (PRIMARY)",c:"#BF5AF2"},{s:"3",t:"LLM Refinement",d:"Llama-3.3 70B evaluasi koherensi (opsional)",c:"#32D74B"},{s:"4",t:"Tanya AI Lanjutan",d:"Chat follow-up gejala & saran",c:"#FF9F0A"}].map(function(st){return html`<div key=${st.s} className="gi" style=${{padding:14,display:"flex",gap:12}}><div style=${{width:28,height:28,borderRadius:8,background:st.c+"15",display:"flex",alignItems:"center",justifyContent:"center",color:st.c,fontSize:13,fontWeight:700,flexShrink:0}}>${st.s}</div><div><div style=${{fontWeight:600,fontSize:14}}>${st.t}</div><div style=${{fontSize:12,color:"#8E8E93",marginTop:2}}>${st.d}</div></div></div>`;})}
 </div></div>
 <div style=${{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-<p style=${{fontSize:13,color:"#C7C7CC"}}>Powered by Groq Cloud API & TFJS</p>
-${akd&&html`<div style=${{display:"flex",alignItems:"center",gap:6,background:"rgba(50,215,75,0.1)",padding:"6px 14px",borderRadius:100,border:"1px solid rgba(50,215,75,0.2)"}}><div style=${{width:8,height:8,borderRadius:4,background:"#32D74B",animation:"pulseGlow 2s infinite"}}/><span style=${{fontSize:12,color:"#32D74B",fontWeight:700}}>${akd}</span></div>`}
-<button onClick=${function(){setNeedKey(true);}} style=${{display:"flex",alignItems:"center",gap:6,background:"var(--gl)",border:"1px solid var(--gb)",borderRadius:14,padding:"10px 20px",fontSize:14,fontWeight:600,color:"#48484A",cursor:"pointer",marginTop:8}}><${Icon} name="key" size=${16}/>Atur API Key</button></div>
+<p style=${{fontSize:13,color:"#C7C7CC"}}>Powered by TensorFlow.js & Groq Cloud API</p>
+${akd&&html`<div style=${{display:"flex",alignItems:"center",gap:6,background:"rgba(50,215,75,0.1)",padding:"6px 14px",borderRadius:100,border:"1px solid rgba(50,215,75,0.2)"}}><div style=${{width:8,height:8,borderRadius:4,background:"#32D74B",animation:"pulseGlow 2s infinite"}}/><span style=${{fontSize:12,color:"#32D74B",fontWeight:700}}>LLM: ${akd}</span></div>`}
+<button onClick=${function(){setNeedKey(true);}} style=${{display:"flex",alignItems:"center",gap:6,background:"var(--gl)",border:"1px solid var(--gb)",borderRadius:14,padding:"10px 20px",fontSize:14,fontWeight:600,color:"#48484A",cursor:"pointer",marginTop:8}}><${Icon} name="key" size=${16}/>Atur API Key (Opsional)</button></div>
 <div className="gl" style=${{padding:16,marginTop:20,background:"rgba(255,159,10,0.06)",border:"1px solid rgba(255,159,10,0.15)"}}><p style=${{fontSize:12,color:"#8E8E93",lineHeight:1.5,margin:0,textAlign:"center"}}><b style=${{color:"#FF9F0A"}}>Disclaimer:</b> BUKAN alat diagnostik medis. Konsultasikan ke dokter anak.</p></div>
 </div>`}
 </div></div>`;}
