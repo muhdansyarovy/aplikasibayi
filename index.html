@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -38,7 +39,9 @@ canvas{display:block}
 <div id="root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
 <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
 
 <script>
@@ -381,29 +384,77 @@ useEffect(function(){
         return;
     }
     
-    // Coba relative path dulu, lalu absolute URL sebagai fallback
-    var relPath = './tfjs_model/model.json';
-    var absPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + '/tfjs_model/model.json';
+    // Custom loader: fetch model.json, patch Keras 3.x batch_shape → batch_input_shape, lalu load
+    var basePath = './tfjs_model/';
+    var modelUrl = basePath + 'model.json';
     
-    console.log("Trying model path:", relPath);
-    tf.loadLayersModel(relPath).then(function(m){
+    console.log("Fetching model.json from:", modelUrl);
+    fetch(modelUrl).then(function(r){
+        if(!r.ok) throw new Error("HTTP " + r.status + " saat fetch " + modelUrl);
+        return r.json();
+    }).then(function(modelJSON){
+        console.log("model.json fetched, patching Keras 3.x compatibility...");
+        
+        // Patch: Keras 3.x menggunakan "batch_shape", TF.js butuh "batch_input_shape"
+        var jsonStr = JSON.stringify(modelJSON);
+        jsonStr = jsonStr.replace(/"batch_shape"\s*:/g, '"batch_input_shape":');
+        var patched = JSON.parse(jsonStr);
+        
+        // Extract weightsManifest untuk fetch weights
+        var weightsManifest = patched.weightsManifest;
+        var modelTopology = patched.modelTopology || patched;
+        
+        // Fetch semua weight files
+        var weightSpecs = [];
+        var weightDataPromises = [];
+        
+        if(weightsManifest && weightsManifest.length > 0){
+            weightsManifest.forEach(function(group){
+                if(group.weights) weightSpecs = weightSpecs.concat(group.weights);
+                if(group.paths){
+                    group.paths.forEach(function(p){
+                        weightDataPromises.push(
+                            fetch(basePath + p).then(function(r){
+                                if(!r.ok) throw new Error("HTTP " + r.status + " saat fetch " + p);
+                                return r.arrayBuffer();
+                            })
+                        );
+                    });
+                }
+            });
+        }
+        
+        return Promise.all(weightDataPromises).then(function(buffers){
+            // Gabungkan semua weight buffers
+            var totalLen = buffers.reduce(function(s, b){ return s + b.byteLength; }, 0);
+            var combined = new ArrayBuffer(totalLen);
+            var view = new Uint8Array(combined);
+            var offset = 0;
+            buffers.forEach(function(buf){
+                view.set(new Uint8Array(buf), offset);
+                offset += buf.byteLength;
+            });
+            
+            console.log("Weights loaded, total size:", (totalLen/1024).toFixed(1) + " KB");
+            
+            // Load model dari memory
+            return tf.loadLayersModel(tf.io.fromMemory(
+                patched.modelTopology,
+                weightSpecs,
+                combined,
+                patched.training_config
+            ));
+        });
+    }).then(function(m){
         setTfModel(m);
         setModelStatus("loaded");
         console.log("TFJS Model loaded! Input shape:", m.inputs[0].shape, "Output shape:", m.outputs[0].shape);
         var el=document.getElementById("loading");if(el)el.style.display="none";
-    }).catch(function(e1){
-        console.warn("Relative path failed:", e1.message, "Trying absolute:", absPath);
-        tf.loadLayersModel(absPath).then(function(m){
-            setTfModel(m);
-            setModelStatus("loaded");
-            console.log("TFJS Model loaded via absolute path!");
-            var el=document.getElementById("loading");if(el)el.style.display="none";
-        }).catch(function(e2){
-            console.error("Both paths failed:", e2);
-            setModelStatus("error");
-            setModelErr("Path 1: " + e1.message + " | Path 2: " + e2.message);
-            var el=document.getElementById("loading");if(el)el.style.display="none";
-        });
+    }).catch(function(e){
+        console.error("Model load failed:", e);
+        setModelStatus("error");
+        setModelErr(e.message || String(e));
+        var el=document.getElementById("loading");if(el)el.style.display="none";
     });
 },[]);
 
@@ -492,5 +543,6 @@ ${akd&&html`<div style=${{display:"flex",alignItems:"center",gap:6,background:"r
 
 ReactDOM.createRoot(document.getElementById("root")).render(html`<${App}/>`);
 </script>
+
 </body>
 </html>
