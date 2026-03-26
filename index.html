@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -52,37 +51,36 @@ var ALL_LABELS=[{v:"hungry",l:"Lapar"},{v:"belly_pain",l:"Sakit Perut"},{v:"burp
 var CRY_DB={hungry:{label:"Lapar",labelEn:"Hungry",icon:"bottle",color:"#FF9F0A",cl:"#FFF4E0",desc:"Tangisan ritmis dan berulang.",steps:[{n:1,a:"Periksa waktu makan",d:"Bayi makan tiap 2-3 jam.",i:"clock"},{n:2,a:"Tanda lapar",d:"Mengisap jari, membuka mulut.",i:"smile"},{n:3,a:"Berikan ASI/susu",d:"Pastikan pelekatan benar.",i:"heart"},{n:4,a:"Sendawakan",d:"Tegakkan 15-20 mnt.",i:"wind"}],warns:["Menolak makan >8 jam","BB tidak naik","Muntah proyektil"],tips:[{t:"Cradle Hold",d:"Kepala di siku, perut bertemu perut."}]},belly_pain:{label:"Sakit Perut",labelEn:"Belly Pain",icon:"activity",color:"#FF453A",cl:"#FFE5E3",desc:"Tangisan bernada tinggi, kaki ditarik ke perut.",steps:[{n:1,a:"Pijatan I-L-U",d:"Pijat perut searah usus.",i:"hand"},{n:2,a:"Airplane Hold",d:"Tengkurap di lengan bawah.",i:"airplane"},{n:3,a:"Gerakan sepeda",d:"Gerakkan kaki mengayuh.",i:"refresh"},{n:4,a:"Kompres hangat",d:"Handuk hangat 5-10 mnt.",i:"thermometer"}],warns:["Perut keras+muntah hijau","Darah dalam tinja","Demam >38°C"],tips:[{t:"Pijat I-L-U",d:"I kiri, L melintang, U terbalik."}]},burping:{label:"Bersendawa",labelEn:"Burping",icon:"wind",color:"#32D74B",cl:"#E3F9E8",desc:"Tangisan pendek terputus-putus.",steps:[{n:1,a:"Tegak di bahu",d:"Tepuk punggung bawah ke atas.",i:"user"},{n:2,a:"Duduk pangkuan",d:"Topang dada, tepuk punggung.",i:"home"},{n:3,a:"Tengkurap pangkuan",d:"Usap punggung.",i:"hand"},{n:4,a:"Tunggu sabar",d:"Ubah posisi tiap 2-3 mnt.",i:"clock"}],warns:["Gumoh >2 sdm"],tips:[{t:"Over-the-Shoulder",d:"Tepuk ritmis, lindungi bahu."}]},discomfort:{label:"Tidak Nyaman",labelEn:"Discomfort",icon:"frown",color:"#FF9F0A",cl:"#FFF4E0",desc:"Tangisan berselang, berubah saat posisi berganti.",steps:[{n:1,a:"Periksa popok",d:"Ganti jika basah/kotor.",i:"paperclip"},{n:2,a:"Periksa pakaian",d:"Cek hair tourniquet!",i:"user"},{n:3,a:"Ubah posisi",d:"Telentang, miring, tegak.",i:"refresh"},{n:4,a:"Lingkungan",d:"Kurangi stimulasi.",i:"home"}],warns:["Ruam melepuh >3 hari"],tips:[{t:"Hair Tourniquet",d:"Periksa SEMUA jari!"}]},tired:{label:"Mengantuk",labelEn:"Tired",icon:"moon",color:"#BF5AF2",cl:"#F3E8FF",desc:"Tangisan merengek lemah, mengucek mata.",steps:[{n:1,a:"Wake window",d:"0-3bln: 45-90mnt.",i:"clock"},{n:2,a:"Lingkungan tidur",d:"Redupkan lampu, white noise.",i:"moon"},{n:3,a:"Rutinitas",d:"Bedong, ayun, lagu.",i:"music"},{n:4,a:"Letakkan drowsy",d:"Mengantuk tapi belum tidur.",i:"home"}],warns:["Tidur >18 jam & sulit bangun"],tips:[{t:"Bedong",d:"Rapat, pinggul bebas."}]},lonely:{label:"Butuh Perhatian",labelEn:"Lonely",icon:"heart",color:"#0A84FF",cl:"#E0F0FF",desc:"Tangisan rendah, berhenti saat digendong.",steps:[{n:1,a:"Skin-to-skin",d:"Dekapkan di dada.",i:"heart"},{n:2,a:"Komunikasi",d:"Tatap mata, bicara lembut.",i:"eye"},{n:3,a:"Carrier",d:"Baby carrier, tangan bebas.",i:"smile"},{n:4,a:"Stimulasi",d:"Mainan kontras.",i:"activity"}],warns:["Tidak merespons >2 bulan"],tips:[{t:"Kangaroo",d:"Menghadap dada."}]},scared:{label:"Kaget/Takut",labelEn:"Scared",icon:"zap",color:"#FF453A",cl:"#FFE5EA",desc:"Tangisan tajam mendadak, respons Moro.",steps:[{n:1,a:"Shhhh",d:"Dekat telinga, lebih keras dari tangis.",i:"volumex"},{n:2,a:"Bedong",d:"Kurangi refleks Moro.",i:"heart"},{n:3,a:"Hindari pemicu",d:"Suara keras, gerakan tiba-tiba.",i:"volumex"},{n:4,a:"Peluk ritmis",d:"Goyang kecil ritmis.",i:"refresh"}],warns:["Moro >6 bulan","Kejang"],tips:[{t:"Teknik 5S",d:"Swaddle-Side-Shush-Swing-Suck."}]},cold_hot:{label:"Suhu",labelEn:"Cold/Hot",icon:"thermometer",color:"#5AC8FA",cl:"#E0F5FF",desc:"Tangisan kontinu, ketidaknyamanan suhu.",steps:[{n:1,a:"Cek suhu",d:"Sentuh dada/punggung.",i:"thermometer"},{n:2,a:"Sesuaikan pakaian",d:"Dewasa + 1 lapisan.",i:"user"},{n:3,a:"Atur ruangan",d:"Ideal 20-22°C.",i:"home"},{n:4,a:"Periksa tanda",d:"Panas: merah. Dingin: pucat.",i:"search"}],warns:["Suhu >38°C/<36°C <3bln"],tips:[{t:"Lapisan",d:"Overheating LEBIH BAHAYA."}]},unknown:{label:"Tdk Dikenali",labelEn:"Unknown",icon:"help",color:"#8E8E93",cl:"#F2F2F7",desc:"Pola tidak cocok kategori.",steps:[{n:1,a:"Checklist",d:"Lapar? Popok? Lelah? Suhu?",i:"file"},{n:2,a:"Periksa fisik",d:"Jari, ruam, bengkak.",i:"search"},{n:3,a:"Menenangkan",d:"Skin-to-skin, 5S.",i:"heart"},{n:4,a:"Konsultasi",d:"Catat kapan & berapa lama.",i:"file"}],warns:["Tangisan >3 jam","Demam+muntah+diare"],tips:[{t:"Ke Dokter",d:"Tangisan >3jam, demam."}]}};
 
 /* === STORAGE === */
-var DB={_d:null,_l:function(){if(!this._d){try{this._d=JSON.parse(localStorage.getItem(“bcry”)||“null”);}catch(e){}if(!this._d)this._d={h:[],p:null,g:[]};}return this._d;},_s:function(){try{localStorage.setItem(“bcry”,JSON.stringify(this._d));}catch(e){}},
+var DB={_d:null,_l:function(){if(!this._d){try{this._d=JSON.parse(localStorage.getItem("bcry")||"null");}catch(e){}if(!this._d)this._d={h:[],p:null,g:[]};}return this._d;},_s:function(){try{localStorage.setItem("bcry",JSON.stringify(this._d));}catch(e){}},
 gh:function(){return this._l().h||[];},ah:function(e){this._l();this._d.h.unshift(e);if(this._d.h.length>200)this._d.h=this._d.h.slice(0,200);this._s();},ul:function(id,lb){this._l();var h=this._d.h.find(function(e){return e.id===id;});if(h){h.ml=lb;h.v=true;}this._s();},dh:function(id){this._l();this._d.h=this._d.h.filter(function(e){return e.id!==id;});this._s();},ch:function(){this._l();this._d.h=[];this._s();},
 gp:function(){return this._l().p;},sp:function(p){this._l();this._d.p=p;this._s();},
 gg:function(){return this._l().g||[];},ag:function(r){this._l();if(!this._d.g)this._d.g=[];this._d.g.push(r);this._d.g.sort(function(a,b){return new Date(a.d)-new Date(b.d);});this._s();},dg:function(id){this._l();this._d.g=this._d.g.filter(function(r){return r.id!==id;});this._s();}};
 
 /* === ICON === */
-function Ic(p){var s=p.size||24,c=p.color||“currentColor”,sw=p.sw||2.2;
-var d={bottle:“M10 2v5.5M14 2v5.5M8 7.5h8M8 12c0-3 8-3 8 0v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-7z”,moon:“M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z”,wind:“M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2”,activity:“M22 12h-4l-3 9L9 3l-3 9H2”,heart:“M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z”,zap:“M13 2L3 14h9l-1 8 10-12h-9l1-8z”,thermometer:“M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z”,help:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01”,clock:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2”,smile:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01”,frown:“M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01”,user:“M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z”,hand:“M18 11V6a2 2 0 0 0-4 0v4M14 11V4a2 2 0 0 0-4 0v6M10 10V5a2 2 0 0 0-4 0v7M6 12V8a2 2 0 0 0-4 0v9a10 10 0 0 0 20 0v-4a2 2 0 0 0-4 0”,airplane:“M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 3.1L7 15l-3.3-.8c-.4-.1-.8.1-1 .5L2 16l4.2 2.8L9 23l1.2-.7c.4-.2.6-.6.5-1L10 18l3.9-2 3.1 6 1.2-1.3c.4-.2.7-.6.6-1.1z”,home:“M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10”,paperclip:“M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48”,refresh:“M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15”,music:“M9 18V5l12-2v13M9 9l12-2M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z”,eye:“M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z”,volumex:“M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6”,search:“M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35”,mic:“M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8”,cpu:“M4 4h16v16H4zM9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3”,check:“M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3”,bot:“M12 8V4M8 4h8M2 14h2M20 14h2M15 13v2M9 13v2M4 8h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z”,alert:“M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01”,phone:“M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z”,file:“M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8”,bar:“M12 20V10M18 20V4M6 20v-4”,key:“M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4”,trash:“M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6”};
+function Ic(p){var s=p.size||24,c=p.color||"currentColor",sw=p.sw||2.2;
+var d={bottle:"M10 2v5.5M14 2v5.5M8 7.5h8M8 12c0-3 8-3 8 0v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-7z",moon:"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z",wind:"M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2",activity:"M22 12h-4l-3 9L9 3l-3 9H2",heart:"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z",zap:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",thermometer:"M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z",help:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01",clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",smile:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01",frown:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01",user:"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z",hand:"M18 11V6a2 2 0 0 0-4 0v4M14 11V4a2 2 0 0 0-4 0v6M10 10V5a2 2 0 0 0-4 0v7M6 12V8a2 2 0 0 0-4 0v9a10 10 0 0 0 20 0v-4a2 2 0 0 0-4 0",airplane:"M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 3.1L7 15l-3.3-.8c-.4-.1-.8.1-1 .5L2 16l4.2 2.8L9 23l1.2-.7c.4-.2.6-.6.5-1L10 18l3.9-2 3.1 6 1.2-1.3c.4-.2.7-.6.6-1.1z",home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",paperclip:"M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48",refresh:"M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15",music:"M9 18V5l12-2v13M9 9l12-2M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",volumex:"M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6",search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",mic:"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8",cpu:"M4 4h16v16H4zM9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3",check:"M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3",bot:"M12 8V4M8 4h8M2 14h2M20 14h2M15 13v2M9 13v2M4 8h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z",alert:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",phone:"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z",file:"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",bar:"M12 20V10M18 20V4M6 20v-4",key:"M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",trash:"M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"};
 return html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke=${c} strokeWidth=${sw} strokeLinecap="round" strokeLinejoin="round"><path d=${d[p.name]||"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"}/></svg>`;}
 
 /* === YAMNET PIPELINE === */
-function resample16k(ad,sr){return new Promise(function(res,rej){var t=16000,n=Math.ceil(ad.length/sr*t);if(n<1){rej(new Error(“Pendek”));return;}var oc=new OfflineAudioContext(1,n,t),b=oc.createBuffer(1,ad.length,sr);b.getChannelData(0).set(ad);var s=oc.createBufferSource();s.buffer=b;s.connect(oc.destination);s.start();oc.startRendering().then(function(r){res(r.getChannelData(0));}).catch(rej);});}
+function resample16k(ad,sr){return new Promise(function(res,rej){var t=16000,n=Math.ceil(ad.length/sr*t);if(n<1){rej(new Error("Pendek"));return;}var oc=new OfflineAudioContext(1,n,t),b=oc.createBuffer(1,ad.length,sr);b.getChannelData(0).set(ad);var s=oc.createBufferSource();s.buffer=b;s.connect(oc.destination);s.start();oc.startRendering().then(function(r){res(r.getChannelData(0));}).catch(rej);});}
 function pNorm(a){var m=0;for(var i=0;i<a.length;i++){var v=Math.abs(a[i]);if(v>m)m=v;}if(!m)return a;var o=new Float32Array(a.length);for(var i=0;i<a.length;i++)o[i]=a[i]/m;return o;}
-function yamEmb(ym,a){var inp=tf.tensor1d(a),out=ym.execute(inp),e=null;if(Array.isArray(out)){for(var i=0;i<out.length;i++){var s=out[i].shape;if(s.length===2&&s[1]===1024){e=out[i];break;}}if(!e&&out.length>=2)e=out[1];}else e=out;if(!e)throw new Error(“No embedding”);var m=e.mean(0),r=Array.from(m.dataSync());inp.dispose();m.dispose();if(Array.isArray(out))out.forEach(function(t){t.dispose();});else out.dispose();return r;}
-function clsEmb(cm,e){var i=tf.tensor2d([e],[1,1024]),o=cm.predict(i),p=Array.from(o.dataSync());i.dispose();o.dispose();var r=[];for(var j=0;j<CLASSES.length;j++)r.push({class:CLASSES[j],confidence:Math.round(p[j]*100),acoustic_evidence:“YAMNet→cls (”+(p[j]*100).toFixed(1)+”%)”});r.sort(function(a,b){return b.confidence-a.confidence;});return r.slice(0,3);}
-function doClassify(ch,sr,ym,cm){return new Promise(function(res,rej){var tl=0;for(var i=0;i<ch.length;i++)tl+=ch[i].length;if(tl<sr){rej(new Error(“Rekam min 3 detik.”));return;}var fa=new Float32Array(tl),o=0;for(var i=0;i<ch.length;i++){fa.set(ch[i],o);o+=ch[i].length;}
-resample16k(fa,sr).then(function(a16){var nm=pNorm(a16),em,pr;try{em=yamEmb(ym,nm);}catch(e){rej(new Error(“YAMNet: “+e.message));return;}try{pr=clsEmb(cm,em);}catch(e){rej(new Error(“Cls: “+e.message));return;}if(pr[0].confidence<15)pr=[{class:“unknown”,confidence:50,acoustic_evidence:“Model tidak yakin.”}];
-var um={belly_pain:“high”,scared:“high”,hungry:“medium”,cold_hot:“medium”,discomfort:“medium”,burping:“low”,tired:“low”,lonely:“low”,unknown:“medium”};var db=CRY_DB[pr[0].class]||CRY_DB.unknown;
-res({predictions:pr,analysis:“Audio “+(tl/sr).toFixed(1)+“s → YAMNet [1024] → classifier.”,contextual_advice:db.desc+” “+db.steps[0].a+”: “+db.steps[0].d,urgency:um[pr[0].class]||“low”,duration:+(tl/sr).toFixed(1)});}).catch(function(e){rej(e);});});}
-function aiChat(q,ctx){return new Promise(function(res){if(!window.__GK){res(“Atur API Key dulu.”);return;}var c=new AbortController(),t=setTimeout(function(){c.abort();},15000);fetch(“https://api.groq.com/openai/v1/chat/completions”,{method:“POST”,headers:{“Content-Type”:“application/json”,“Authorization”:“Bearer “+window.__GK},body:JSON.stringify({model:“llama-3.3-70b-versatile”,messages:[{role:“system”,content:“Anda dokter anak AI. Jawab bahasa Indonesia, empatik. JANGAN markdown. Maks 3 paragraf.”},{role:“user”,content:“KONTEKS:\n”+JSON.stringify(ctx,null,1)+”\n\nPERTANYAAN: “+q}],temperature:0.5,max_tokens:600}),signal:c.signal}).then(function(r){clearTimeout(t);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);res(d.choices[0].message.content);}).catch(function(e){clearTimeout(t);res(“Gagal: “+(e.message||””));});});}
+function yamEmb(ym,a){var inp=tf.tensor1d(a),out=ym.execute(inp),e=null;if(Array.isArray(out)){for(var i=0;i<out.length;i++){var s=out[i].shape;if(s.length===2&&s[1]===1024){e=out[i];break;}}if(!e&&out.length>=2)e=out[1];}else e=out;if(!e)throw new Error("No embedding");var m=e.mean(0),r=Array.from(m.dataSync());inp.dispose();m.dispose();if(Array.isArray(out))out.forEach(function(t){t.dispose();});else out.dispose();return r;}
+function clsEmb(cm,e){var i=tf.tensor2d([e],[1,1024]),o=cm.predict(i),p=Array.from(o.dataSync());i.dispose();o.dispose();var r=[];for(var j=0;j<CLASSES.length;j++)r.push({class:CLASSES[j],confidence:Math.round(p[j]*100),acoustic_evidence:"YAMNet→cls ("+(p[j]*100).toFixed(1)+"%)"});r.sort(function(a,b){return b.confidence-a.confidence;});return r.slice(0,3);}
+function doClassify(ch,sr,ym,cm){return new Promise(function(res,rej){var tl=0;for(var i=0;i<ch.length;i++)tl+=ch[i].length;if(tl<sr){rej(new Error("Rekam min 3 detik."));return;}var fa=new Float32Array(tl),o=0;for(var i=0;i<ch.length;i++){fa.set(ch[i],o);o+=ch[i].length;}
+resample16k(fa,sr).then(function(a16){var nm=pNorm(a16),em,pr;try{em=yamEmb(ym,nm);}catch(e){rej(new Error("YAMNet: "+e.message));return;}try{pr=clsEmb(cm,em);}catch(e){rej(new Error("Cls: "+e.message));return;}if(pr[0].confidence<15)pr=[{class:"unknown",confidence:50,acoustic_evidence:"Model tidak yakin."}];
+var um={belly_pain:"high",scared:"high",hungry:"medium",cold_hot:"medium",discomfort:"medium",burping:"low",tired:"low",lonely:"low",unknown:"medium"};var db=CRY_DB[pr[0].class]||CRY_DB.unknown;
+res({predictions:pr,analysis:"Audio "+(tl/sr).toFixed(1)+"s → YAMNet [1024] → classifier.",contextual_advice:db.desc+" "+db.steps[0].a+": "+db.steps[0].d,urgency:um[pr[0].class]||"low",duration:+(tl/sr).toFixed(1)});}).catch(function(e){rej(e);});});}
+function aiChat(q,ctx){return new Promise(function(res){if(!window.__GK){res("Atur API Key dulu.");return;}var c=new AbortController(),t=setTimeout(function(){c.abort();},15000);fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+window.__GK},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:"Anda dokter anak AI. Jawab bahasa Indonesia, empatik. JANGAN markdown. Maks 3 paragraf."},{role:"user",content:"KONTEKS:\n"+JSON.stringify(ctx,null,1)+"\n\nPERTANYAAN: "+q}],temperature:0.5,max_tokens:600}),signal:c.signal}).then(function(r){clearTimeout(t);return r.json();}).then(function(d){if(d.error)throw new Error(d.error.message);res(d.choices[0].message.content);}).catch(function(e){clearTimeout(t);res("Gagal: "+(e.message||""));});});}
 
 /* === VIS === */
 function extractVis(an,sr){var fbc=an.frequencyBinCount,fd=new Uint8Array(fbc),td=new Uint8Array(an.fftSize);an.getByteFrequencyData(fd);an.getByteTimeDomainData(td);var mb=32,me=new Float32Array(mb),mf=sr/2;for(var m=0;m<mb;m++){var mL=2595*Math.log10(1+((m/mb)*mf)/700),mH=2595*Math.log10(1+(((m+1)/mb)*mf)/700),bL=Math.floor((700*(Math.pow(10,mL/2595)-1)/mf)*fbc),bH=Math.min(Math.ceil((700*(Math.pow(10,mH/2595)-1)/mf)*fbc),fbc-1),e=0,c=0;for(var b=bL;b<=bH;b++){e+=fd[b];c++;}me[m]=c>0?Math.log(e/c+1e-8):0;}var mx=0,ta=0;for(var i=0;i<td.length;i++){var a=Math.abs(td[i]-128);if(a>mx)mx=a;ta+=a;}return{mel:Array.from(me),amp:ta/td.length};}
-function Spec(p){var r=useRef(null);useEffect(function(){if(!r.current||!p.d.length)return;var c=r.current,x=c.getContext(“2d”),dp=devicePixelRatio||1,rc=c.getBoundingClientRect();c.width=rc.width*dp;c.height=rc.height*dp;x.scale(dp,dp);var W=rc.width,H=rc.height,n=p.d.length,mb=p.d[0].mel.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;p.d.forEach(function(f){f.mel.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=p.d[f].mel,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle=“rgba(10,132,255,”+Math.pow(nm,0.7)*0.8+”)”;x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[p.d]);
-return html`<div style=${{position:"relative"}}><canvas ref=${r} style=${{width:"100%",height:70,borderRadius:12,background:"rgba(255,255,255,0.4)"}}/>${p.rec&&html`<div style=${{position:“absolute”,top:5,right:7,background:”#FF453A”,borderRadius:16,padding:“2px 8px”,fontSize:9,color:”#FFF”,fontWeight:700,animation:“blink 1.5s infinite”}}>REC</div>`}</div>`;}
-function Wav(p){var r=useRef(null),a=useRef(null);useEffect(function(){if(!p.rec||!p.aRef.current||!r.current)return;var c=r.current,x=c.getContext(“2d”),an=p.aRef.current,da=new Uint8Array(an.fftSize);function draw(){a.current=requestAnimationFrame(draw);an.getByteTimeDomainData(da);var dp=devicePixelRatio||1,rc=c.getBoundingClientRect();c.width=rc.width*dp;c.height=rc.height*dp;x.scale(dp,dp);var W=rc.width,H=rc.height;x.clearRect(0,0,W,H);x.lineWidth=2;x.strokeStyle=”#0A84FF”;x.beginPath();var sw=W/da.length,px=0;for(var i=0;i<da.length;i++){var v=da[i]/128,y=(v*H)/2;i===0?x.moveTo(px,y):x.lineTo(px,y);px+=sw;}x.stroke();}draw();return function(){cancelAnimationFrame(a.current);};},[p.rec,p.aRef]);return html`<canvas ref=${r} style=${{width:"100%",height:36,borderRadius:12,background:"rgba(255,255,255,0.4)"}}/>`;};
+function Spec(p){var r=useRef(null);useEffect(function(){if(!r.current||!p.d.length)return;var c=r.current,x=c.getContext("2d"),dp=devicePixelRatio||1,rc=c.getBoundingClientRect();c.width=rc.width*dp;c.height=rc.height*dp;x.scale(dp,dp);var W=rc.width,H=rc.height,n=p.d.length,mb=p.d[0].mel.length;x.clearRect(0,0,W,H);var mn=Infinity,mx=-Infinity;p.d.forEach(function(f){f.mel.forEach(function(v){if(v<mn)mn=v;if(v>mx)mx=v;});});var rg=mx-mn||1;for(var f=0;f<n;f++){var px=(f/n)*W,ml=p.d[f].mel,bh=H/mb,cw=Math.max(2,W/n);for(var m=0;m<mb;m++){var nm=(ml[m]-mn)/rg;x.fillStyle="rgba(10,132,255,"+Math.pow(nm,0.7)*0.8+")";x.fillRect(px,H-(m+1)*bh,cw+1,bh+1);}}},[p.d]);
+return html`<div style=${{position:"relative"}}><canvas ref=${r} style=${{width:"100%",height:70,borderRadius:12,background:"rgba(255,255,255,0.4)"}}/>${p.rec&&html`<div style=${{position:"absolute",top:5,right:7,background:"#FF453A",borderRadius:16,padding:"2px 8px",fontSize:9,color:"#FFF",fontWeight:700,animation:"blink 1.5s infinite"}}>REC</div>`}</div>`;}
+function Wav(p){var r=useRef(null),a=useRef(null);useEffect(function(){if(!p.rec||!p.aRef.current||!r.current)return;var c=r.current,x=c.getContext("2d"),an=p.aRef.current,da=new Uint8Array(an.fftSize);function draw(){a.current=requestAnimationFrame(draw);an.getByteTimeDomainData(da);var dp=devicePixelRatio||1,rc=c.getBoundingClientRect();c.width=rc.width*dp;c.height=rc.height*dp;x.scale(dp,dp);var W=rc.width,H=rc.height;x.clearRect(0,0,W,H);x.lineWidth=2;x.strokeStyle="#0A84FF";x.beginPath();var sw=W/da.length,px=0;for(var i=0;i<da.length;i++){var v=da[i]/128,y=(v*H)/2;i===0?x.moveTo(px,y):x.lineTo(px,y);px+=sw;}x.stroke();}draw();return function(){cancelAnimationFrame(a.current);};},[p.rec,p.aRef]);return html`<canvas ref=${r} style=${{width:"100%",height:36,borderRadius:12,background:"rgba(255,255,255,0.4)"}}/>`;};
 
 /* === RESULT CARD === */
-function RC(p){var pr=p.pred,rk=p.rank,db=CRY_DB[pr.class]||CRY_DB.unknown,top=rk===0;var _o=useState(top),op=_o[0],so=_o[1];var _t=useState(“steps”),tb=_t[0],st=_t[1];
-return html`<div className=“gl” style=${{background:top?“linear-gradient(135deg,”+db.cl+“DD,rgba(255,255,255,0.9))”:“rgba(255,255,255,0.7)”,animation:“slideUp 0.5s “+rk*0.08+“s both”,overflow:“hidden”}}>
-
+function RC(p){var pr=p.pred,rk=p.rank,db=CRY_DB[pr.class]||CRY_DB.unknown,top=rk===0;var _o=useState(top),op=_o[0],so=_o[1];var _t=useState("steps"),tb=_t[0],st=_t[1];
+return html`<div className="gl" style=${{background:top?"linear-gradient(135deg,"+db.cl+"DD,rgba(255,255,255,0.9))":"rgba(255,255,255,0.7)",animation:"slideUp 0.5s "+rk*0.08+"s both",overflow:"hidden"}}>
 <div onClick=${function(){so(!op);}} style=${{padding:"14px 16px",cursor:"pointer"}}><div style=${{display:"flex",alignItems:"center",gap:10}}>
 <div style=${{width:top?44:36,height:top?44:36,borderRadius:top?14:10,background:db.color+"15",display:"flex",alignItems:"center",justifyContent:"center",color:db.color}}><${Ic} name=${db.icon} size=${top?22:18}/></div>
 <div style=${{flex:1}}><div style=${{fontWeight:600,fontSize:top?16:14}}>${db.label}</div><div style=${{fontSize:11,color:"#8E8E93"}}>${db.labelEn}</div></div>
@@ -98,10 +96,9 @@ ${tb==="warning"&&html`<div style=${{display:"flex",flexDirection:"column",gap:5
 function HTab(){
 var _h=useState(DB.gh()),h=_h[0],sH=_h[1];var _x=useState(null),xId=_x[0],sX=_x[1];
 function ref(){sH(DB.gh());}function sl(id,lb){DB.ul(id,lb);ref();}function dl(id){DB.dh(id);ref();}
-function fd(ts){var d=new Date(ts);return d.toLocaleDateString(“id-ID”,{day:“numeric”,month:“short”})+” “+d.toLocaleTimeString(“id-ID”,{hour:“2-digit”,minute:“2-digit”});}
+function fd(ts){var d=new Date(ts);return d.toLocaleDateString("id-ID",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});}
 if(!h.length)return html`<div style=${{padding:"60px 20px",textAlign:"center"}}><${Ic} name="file" size=${40} color="#C7C7CC" sw=${1.5}/><p style=${{fontSize:15,color:"#8E8E93",marginTop:12}}>Belum ada riwayat.</p></div>`;
-return html`<div style=${{padding:“12px 20px”}}>
-
+return html`<div style=${{padding:"12px 20px"}}>
 <div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><span style=${{fontWeight:700,fontSize:18}}>Riwayat</span><span style=${{fontSize:12,color:"#8E8E93"}}>${h.length} data</span></div>
 <div style=${{display:"flex",flexDirection:"column",gap:8}}>
 ${h.map(function(e){var db=CRY_DB[e.pr]||CRY_DB.unknown;var mdb=e.ml?CRY_DB[e.ml]||CRY_DB.unknown:null;var isO=xId===e.id;
@@ -125,19 +122,18 @@ ${e.v&&e.ml!==e.pr&&html`<div style=${{marginTop:8,fontSize:11,color:"#FF9F0A"}}
 function PTab(){
 var _p=useState(DB.gp()||{}),pr=_p[0],sP=_p[1];
 var _g=useState(DB.gg()),gr=_g[0],sG=_g[1];
-var _w=useState(””),nw=_w[0],sW=_w[1];var _ht=useState(””),nh=_ht[0],sHt=_ht[1];
-var _dt=useState(new Date().toISOString().split(“T”)[0]),nd=_dt[0],sD=_dt[1];
-var _ai=useState(””),ai=_ai[0],sAi=_ai[1];var _al=useState(false),al=_al[0],sAl=_al[1];
+var _w=useState(""),nw=_w[0],sW=_w[1];var _ht=useState(""),nh=_ht[0],sHt=_ht[1];
+var _dt=useState(new Date().toISOString().split("T")[0]),nd=_dt[0],sD=_dt[1];
+var _ai=useState(""),ai=_ai[0],sAi=_ai[1];var _al=useState(false),al=_al[0],sAl=_al[1];
 var _ed=useState(!pr.name),ed=_ed[0],sEd=_ed[1];
 function sv(k,v){var n=Object.assign({},pr);n[k]=v;sP(n);DB.sp(n);}
-function addG(){var w=parseFloat(nw);if(!w)return;DB.ag({id:Date.now()+””,d:nd,w:w,h:nh?parseFloat(nh):null});sG(DB.gg());sW(””);sHt(””);}
+function addG(){var w=parseFloat(nw);if(!w)return;DB.ag({id:Date.now()+"",d:nd,w:w,h:nh?parseFloat(nh):null});sG(DB.gg());sW("");sHt("");}
 function delG(id){DB.dg(id);sG(DB.gg());}
-function askAI(){if(!window.__GK){sAi(“Atur API Key dulu.”);return;}sAl(true);
+function askAI(){if(!window.__GK){sAi("Atur API Key dulu.");return;}sAl(true);
 var ctx={name:pr.name,birth:pr.bd,gender:pr.gn,growth:gr.slice(-10),cryHistory:DB.gh().slice(0,15).map(function(h){return{pred:h.pr,label:h.ml,conf:h.cf};})};
-aiChat(“Berdasarkan data pertumbuhan dan pola tangisan bayi ini, berikan saran kesehatan dan tips perawatan. Komentari berat badan jika ada data. Jika pola tangisan dominan, saran spesifik.”,ctx).then(function(a){sAi(a);sAl(false);});}
+aiChat("Berdasarkan data pertumbuhan dan pola tangisan bayi ini, berikan saran kesehatan dan tips perawatan. Komentari berat badan jika ada data. Jika pola tangisan dominan, saran spesifik.",ctx).then(function(a){sAi(a);sAl(false);});}
 
-return html`<div style=${{padding:“12px 20px”}}>
-
+return html`<div style=${{padding:"12px 20px"}}>
 <div style=${{fontWeight:700,fontSize:18,marginBottom:14}}>Profil Bayi</div>
 <div className="gl" style=${{padding:18,marginBottom:14}}>
 ${ed?html`<div style=${{display:"flex",flexDirection:"column",gap:10}}>
@@ -176,70 +172,75 @@ ${ai?html`<p style=${{fontSize:13,lineHeight:1.6,margin:"0 0 10px",color:"#48484
 
 /* === MAIN APP === */
 function App(){
-var _tab=useState(“rec”),tab=_tab[0],sTab=_tab[1];
-var _ph=useState(“idle”),ph=_ph[0],sPh=_ph[1];
+var _tab=useState("rec"),tab=_tab[0],sTab=_tab[1];
+var _ph=useState("idle"),ph=_ph[0],sPh=_ph[1];
 var _el=useState(0),el=_el[0],sEl=_el[1];
 var _sd=useState([]),sd=_sd[0],sSd=_sd[1];
 var _rs=useState(null),rs=_rs[0],sRs=_rs[1];
-var _an=useState(””),an=_an[0],sAn=_an[1];
-var _ad=useState(””),ad=_ad[0],sAd=_ad[1];
-var _ur=useState(“low”),ur=_ur[0],sUr=_ur[1];
+var _an=useState(""),an=_an[0],sAn=_an[1];
+var _ad=useState(""),ad=_ad[0],sAd=_ad[1];
+var _ur=useState("low"),ur=_ur[0],sUr=_ur[1];
 var _er=useState(null),er=_er[0],sEr=_er[1];
 var _nk=useState(false),nk=_nk[0],sNk=_nk[1];
-var _ak=useState(””),ak=_ak[0],sAk=_ak[1];
+var _ak=useState(""),ak=_ak[0],sAk=_ak[1];
 var _ym=useState(null),ym=_ym[0],sYm=_ym[1];
 var _cm=useState(null),cm=_cm[0],sCm=_cm[1];
-var _ms=useState(“loading”),ms=_ms[0],sMs=_ms[1];
-var _me=useState(””),me=_me[0],sMe=_me[1];
+var _ms=useState("loading"),ms=_ms[0],sMs=_ms[1];
+var _me=useState(""),me=_me[0],sMe=_me[1];
 var msR=useRef(null),acR=useRef(null),anR=useRef(null),rawR=useRef([]),srR=useRef(44100);
-var tmR=useRef(null),clR=useRef(null),phR=useRef(“idle”);
+var tmR=useRef(null),clR=useRef(null),phR=useRef("idle");
 
 useEffect(function(){
-var k=localStorage.getItem(“groq_key”);if(k){window.__GK=k;sAk(k.substring(0,8)+”…”);}
-if(!window.tf){sMs(“error”);sMe(“TF.js gagal dimuat.”);document.getElementById(“loading”).style.display=“none”;return;}
-var ld=document.getElementById(“ld-d”),lt=document.getElementById(“ld-t”),lr=document.getElementById(“ld-retry”);
-var t0=Date.now(),lti=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);if(lt)lt.textContent=s+“s”;if(s>30&&lr)lr.style.display=“inline-block”;},1000);
-function ldOk(){clearInterval(lti);document.getElementById(“loading”).style.display=“none”;}
-function ldFail(m){clearInterval(lti);sMs(“error”);sMe(m);if(ld)ld.textContent=“Error: “+m;if(lr)lr.style.display=“inline-block”;}
-if(ld)ld.textContent=“Memuat YAMNet (~13MB)…”;
-tf.loadGraphModel(‘https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1’,{fromTFHub:true}).then(function(y){
-sYm(y);if(ld)ld.textContent=“Memuat Classifier…”;
-var base=window.location.origin+window.location.pathname.replace(//[^/]*$/,’’);
-return tf.loadLayersModel(’./tfjs_model/model.json’).catch(function(){return tf.loadLayersModel(base+’/tfjs_model/model.json’);});
-}).then(function(c){sCm(c);sMs(“loaded”);ldOk();
+var k=localStorage.getItem("groq_key");if(k){window.__GK=k;sAk(k.substring(0,8)+"...");}
+if(!window.tf){sMs("error");sMe("TF.js gagal dimuat.");document.getElementById("loading").style.display="none";return;}
+var ld=document.getElementById("ld-d"),lt=document.getElementById("ld-t"),lr=document.getElementById("ld-retry");
+var t0=Date.now(),lti=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);if(lt)lt.textContent=s+"s";if(s>30&&lr)lr.style.display="inline-block";},1000);
+function ldOk(){clearInterval(lti);document.getElementById("loading").style.display="none";}
+function ldFail(m){clearInterval(lti);sMs("error");sMe(m);if(ld)ld.textContent="Error: "+m;if(lr)lr.style.display="inline-block";}
+var base=window.location.origin+window.location.pathname.replace(/\/[^\/]*$/,'');
+if(ld)ld.textContent="Memuat YAMNet...";
+tf.loadGraphModel('./tfjs_model/yamnet.json').catch(function(){
+return tf.loadGraphModel(base+'/tfjs_model/yamnet.json');
+}).catch(function(){
+if(ld)ld.textContent="YAMNet dari TFHub (lambat)...";
+return tf.loadGraphModel('https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1',{fromTFHub:true});
+}).then(function(y){
+sYm(y);if(ld)ld.textContent="Memuat Classifier...";
+return tf.loadLayersModel('./tfjs_model/model.json').catch(function(){return tf.loadLayersModel(base+'/tfjs_model/model.json');});
+}).then(function(c){sCm(c);sMs("loaded");ldOk();
 }).catch(function(e){ldFail(e.message);});
 },[]);
-useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current&&acR.current.state!==“closed”)acR.current.close();};},[]);
+useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current&&acR.current.state!=="closed")acR.current.close();};},[]);
 
-function start(){if(ms!==“loaded”)return;sEr(null);sRs(null);sAn(””);sAd(””);sSd([]);rawR.current=[];
+function start(){if(ms!=="loaded")return;sEr(null);sRs(null);sAn("");sAd("");sSd([]);rawR.current=[];
 navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){
 msR.current=s;var ac=new(window.AudioContext||window.webkitAudioContext)();acR.current=ac;srR.current=ac.sampleRate;
 var src=ac.createMediaStreamSource(s),a=ac.createAnalyser();a.fftSize=4096;a.smoothingTimeConstant=0.7;src.connect(a);anR.current=a;
 var sn=ac.createScriptProcessor(4096,1,1);sn.onaudioprocess=function(e){rawR.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));};src.connect(sn);sn.connect(ac.destination);
-sPh(“recording”);phR.current=“recording”;sEl(0);
+sPh("recording");phR.current="recording";sEl(0);
 tmR.current=setInterval(function(){sEl(function(e){return e+1;});},1000);
 clR.current=setInterval(function(){var f=extractVis(a,ac.sampleRate);if(f.amp>0.5)sSd(function(p){return p.concat([f]);});},200);
-}).catch(function(e){sEr(e.name===“NotAllowedError”?“Izin mikrofon ditolak.”:“Error: “+e.message);});}
+}).catch(function(e){sEr(e.name==="NotAllowedError"?"Izin mikrofon ditolak.":"Error: "+e.message);});}
 
-function stop(){if(phR.current!==“recording”)return;phR.current=“analyzing”;clearInterval(tmR.current);clearInterval(clR.current);
-if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});sPh(“analyzing”);
-if(rawR.current.length<5){sEr(“Rekam min 3 detik.”);sPh(“idle”);phR.current=“idle”;if(acR.current&&acR.current.state!==“closed”)acR.current.close();return;}
+function stop(){if(phR.current!=="recording")return;phR.current="analyzing";clearInterval(tmR.current);clearInterval(clR.current);
+if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});sPh("analyzing");
+if(rawR.current.length<5){sEr("Rekam min 3 detik.");sPh("idle");phR.current="idle";if(acR.current&&acR.current.state!=="closed")acR.current.close();return;}
 var sEl2=el;
 doClassify(rawR.current,srR.current,ym,cm).then(function(r){
-if(acR.current&&acR.current.state!==“closed”)acR.current.close();
-if(r&&r.predictions){sRs(r.predictions);sAn(r.analysis||””);sAd(r.contextual_advice||””);sUr(r.urgency||“low”);sPh(“results”);phR.current=“results”;
-var p=DB.gp();DB.ah({id:Date.now()+””,ts:Date.now(),pr:r.predictions[0].class,cf:r.predictions[0].confidence,dur:r.duration||sEl2,bn:p?p.name:null,ml:null,v:false});
-}else{sEr(“Gagal.”);sPh(“idle”);phR.current=“idle”;}
-}).catch(function(e){if(acR.current&&acR.current.state!==“closed”)acR.current.close();sEr(e.message);sPh(“idle”);phR.current=“idle”;});}
+if(acR.current&&acR.current.state!=="closed")acR.current.close();
+if(r&&r.predictions){sRs(r.predictions);sAn(r.analysis||"");sAd(r.contextual_advice||"");sUr(r.urgency||"low");sPh("results");phR.current="results";
+var p=DB.gp();DB.ah({id:Date.now()+"",ts:Date.now(),pr:r.predictions[0].class,cf:r.predictions[0].confidence,dur:r.duration||sEl2,bn:p?p.name:null,ml:null,v:false});
+}else{sEr("Gagal.");sPh("idle");phR.current="idle";}
+}).catch(function(e){if(acR.current&&acR.current.state!=="closed")acR.current.close();sEr(e.message);sPh("idle");phR.current="idle";});}
 
-function reset(){sPh(“idle”);phR.current=“idle”;sRs(null);sAn(””);sAd(””);sSd([]);sEl(0);sEr(null);}
-function fmt(s){return String(Math.floor(s/60)).padStart(2,“0”)+”:”+String(s%60).padStart(2,“0”);}
-var mg=ms===“loaded”?{b:“rgba(50,215,75,0.1)”,c:”#32D74B”,t:“Aktif”,d:true}:ms===“loading”?{b:“rgba(10,132,255,0.1)”,c:”#0A84FF”,t:“Memuat…”,d:false}:{b:“rgba(255,69,58,0.1)”,c:”#FF453A”,t:“Error”,d:false};
+function reset(){sPh("idle");phR.current="idle";sRs(null);sAn("");sAd("");sSd([]);sEl(0);sEr(null);}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+var mg=ms==="loaded"?{b:"rgba(50,215,75,0.1)",c:"#32D74B",t:"Aktif",d:true}:ms==="loading"?{b:"rgba(10,132,255,0.1)",c:"#0A84FF",t:"Memuat...",d:false}:{b:"rgba(255,69,58,0.1)",c:"#FF453A",t:"Error",d:false};
 
-return html`<div> ${nk&&html`<div style=${{position:“fixed”,inset:0,background:“rgba(0,0,0,0.5)”,backdropFilter:“blur(20px)”,display:“flex”,alignItems:“center”,justifyContent:“center”,zIndex:999,padding:20,animation:“fadeIn 0.3s”}}><div className=“gl” style=${{padding:24,maxWidth:340,width:“100%”,background:“rgba(255,255,255,0.9)”}}><h2 style=${{fontSize:18,fontWeight:700,textAlign:“center”,marginBottom:14}}>API Key Groq</h2><input class="finp" type="password" id="keyinp" placeholder="gsk_..." style=${{marginBottom:14}}/><button onClick=${function(){var v=document.getElementById(“keyinp”).value.trim();if(v.indexOf(“gsk_”)===0){window.__GK=v;localStorage.setItem(“groq_key”,v);sAk(v.substring(0,8)+”…”);sNk(false);}}} style=${{width:“100%”,padding:12,borderRadius:12,border:“none”,background:”#0A84FF”,color:”#FFF”,fontSize:15,fontWeight:600,cursor:“pointer”}}>Simpan</button></div></div>`}
+return html`<div>
+${nk&&html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(20px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20,animation:"fadeIn 0.3s"}}><div className="gl" style=${{padding:24,maxWidth:340,width:"100%",background:"rgba(255,255,255,0.9)"}}><h2 style=${{fontSize:18,fontWeight:700,textAlign:"center",marginBottom:14}}>API Key Groq</h2><input class="finp" type="password" id="keyinp" placeholder="gsk_..." style=${{marginBottom:14}}/><button onClick=${function(){var v=document.getElementById("keyinp").value.trim();if(v.indexOf("gsk_")===0){window.__GK=v;localStorage.setItem("groq_key",v);sAk(v.substring(0,8)+"...");sNk(false);}}} style=${{width:"100%",padding:12,borderRadius:12,border:"none",background:"#0A84FF",color:"#FFF",fontSize:15,fontWeight:600,cursor:"pointer"}}>Simpan</button></div></div>`}
 
-${tab===“rec”&&html`<div>
-
+${tab==="rec"&&html`<div>
 <div style=${{textAlign:"center",padding:"44px 20px 12px"}}>
 <div className="pill" style=${{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(191,90,242,0.1)",border:"1px solid rgba(191,90,242,0.15)",padding:"4px 12px",marginBottom:12}}><span style=${{fontSize:10,fontWeight:700,color:"#BF5AF2"}}>DEEPINFANT v3</span></div>
 <h1 style=${{fontWeight:800,fontSize:28,letterSpacing:"-0.8px",lineHeight:1.1}}>Baby Cry Translator</h1>
@@ -275,8 +276,8 @@ ${ph==="idle"&&!er&&!rs&&html`<div style=${{marginTop:16,textAlign:"center"}}>
 </div>`}
 </div></div>`}
 
-${tab===“hist”&&html`<div style=${{paddingTop:44}}><${HTab}/></div>`}
-${tab===“prof”&&html`<div style=${{paddingTop:44}}><${PTab}/></div>`}
+${tab==="hist"&&html`<div style=${{paddingTop:44}}><${HTab}/></div>`}
+${tab==="prof"&&html`<div style=${{paddingTop:44}}><${PTab}/></div>`}
 
 <div className="btab">
 ${[["rec","mic","Rekam"],["hist","file","Riwayat"],["prof","user","Profil"]].map(function(t){return html`<button key=${t[0]} className=${tab===t[0]?"on":""} onClick=${function(){sTab(t[0]);}}><${Ic} name=${t[1]} size=${20} color=${tab===t[0]?"#0A84FF":"#8E8E93"}/>${t[2]}</button>`;})}
