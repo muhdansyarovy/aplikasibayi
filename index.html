@@ -367,27 +367,44 @@ function App(){
 var _p=useState("idle"),phase=_p[0],setPhase=_p[1],_e=useState(0),elapsed=_e[0],setElapsed=_e[1],_sd=useState([]),specData=_sd[0],setSpecData=_sd[1],_r=useState(null),results=_r[0],setResults=_r[1],_aa=useState(""),aiAn=_aa[0],setAiAn=_aa[1],_av=useState(""),aiAd=_av[0],setAiAd=_av[1],_u=useState("low"),urg=_u[0],setUrg=_u[1],_er=useState(null),err=_er[0],setErr=_er[1],_nk=useState(false),needKey=_nk[0],setNeedKey=_nk[1],_ak=useState(""),akd=_ak[0],setAkd=_ak[1],_dg=useState(null),diag=_dg[0],setDiag=_dg[1];
 var _tf=useState(null),tfModel=_tf[0],setTfModel=_tf[1];
 var _ml=useState("loading"),modelStatus=_ml[0],setModelStatus=_ml[1];
+var _me=useState(""),modelErr=_me[0],setModelErr=_me[1];
 var msR=useRef(null),acR=useRef(null),anR=useRef(null),fhR=useRef([]),tmR=useRef(null),clR=useRef(null),phR=useRef("idle");
 
 useEffect(function(){
     var k=localStorage.getItem("groq_key");
     if(k){window.__GROQ_KEY=k;setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}
     
-    if(window.tf){
-        tf.loadLayersModel('./tfjs_model/model.json').then(function(m){
+    if(!window.tf){
+        setModelStatus("no_tf");
+        setModelErr("TensorFlow.js library gagal dimuat dari CDN.");
+        var el=document.getElementById("loading");if(el)el.style.display="none";
+        return;
+    }
+    
+    // Coba relative path dulu, lalu absolute URL sebagai fallback
+    var relPath = './tfjs_model/model.json';
+    var absPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + '/tfjs_model/model.json';
+    
+    console.log("Trying model path:", relPath);
+    tf.loadLayersModel(relPath).then(function(m){
+        setTfModel(m);
+        setModelStatus("loaded");
+        console.log("TFJS Model loaded! Input shape:", m.inputs[0].shape, "Output shape:", m.outputs[0].shape);
+        var el=document.getElementById("loading");if(el)el.style.display="none";
+    }).catch(function(e1){
+        console.warn("Relative path failed:", e1.message, "Trying absolute:", absPath);
+        tf.loadLayersModel(absPath).then(function(m){
             setTfModel(m);
             setModelStatus("loaded");
-            console.log("TFJS Model loaded! Input shape:", m.inputs[0].shape, "Output shape:", m.outputs[0].shape);
+            console.log("TFJS Model loaded via absolute path!");
             var el=document.getElementById("loading");if(el)el.style.display="none";
-        }).catch(function(e){
-            console.error("TFJS Model gagal dimuat:", e);
+        }).catch(function(e2){
+            console.error("Both paths failed:", e2);
             setModelStatus("error");
+            setModelErr("Path 1: " + e1.message + " | Path 2: " + e2.message);
             var el=document.getElementById("loading");if(el)el.style.display="none";
         });
-    } else {
-        setModelStatus("no_tf");
-        var el=document.getElementById("loading");if(el)el.style.display="none";
-    }
+    });
 },[]);
 
 useEffect(function(){return function(){clearInterval(tmR.current);clearInterval(clR.current);if(msR.current)msR.current.getTracks().forEach(function(t){t.stop();});if(acR.current)acR.current.close();};},[]);
@@ -412,7 +429,9 @@ var modelBadge = modelStatus === "loaded"
     ? {bg:"rgba(50,215,75,0.1)",br:"rgba(50,215,75,0.2)",cl:"#32D74B",tx:"Model TFJS Aktif",dot:true}
     : modelStatus === "loading"
     ? {bg:"rgba(10,132,255,0.1)",br:"rgba(10,132,255,0.2)",cl:"#0A84FF",tx:"Memuat Model...",dot:false}
-    : {bg:"rgba(255,69,58,0.1)",br:"rgba(255,69,58,0.2)",cl:"#FF453A",tx:"Model Tidak Ditemukan",dot:false};
+    : modelStatus === "no_tf"
+    ? {bg:"rgba(255,159,10,0.1)",br:"rgba(255,159,10,0.2)",cl:"#FF9F0A",tx:"TF.js Tidak Tersedia",dot:false}
+    : {bg:"rgba(255,69,58,0.1)",br:"rgba(255,69,58,0.2)",cl:"#FF453A",tx:"Model Gagal Dimuat",dot:false};
 
 return html`<div>
 ${needKey&&html`<${KeyModal} onSave=${function(k){setNeedKey(false);if(k)setAkd(k.substring(0,8)+"..."+k.substring(k.length-4));}}/>`}
@@ -442,7 +461,7 @@ ${phase==="idle"&&html`<button onClick=${start} disabled=${modelStatus!=="loaded
 ${phase==="recording"&&html`<button onClick=${stop} style=${{background:"#FF453A",color:"#FFF",border:"none",borderRadius:20,padding:"18px 48px",fontWeight:600,fontSize:18,cursor:"pointer",width:"100%"}}>Berhenti & Analisis</button>`}
 ${phase==="analyzing"&&html`<div style=${{height:6,borderRadius:3,overflow:"hidden",background:"rgba(0,0,0,0.05)",width:"60%",margin:"0 auto"}}><div style=${{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,#0A84FF,#BF5AF2,#FF375F,transparent)",backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/></div>`}
 ${phase==="idle"&&!err&&modelStatus==="loaded"&&html`<p style=${{fontSize:14,color:"#8E8E93",marginTop:16,fontWeight:500}}>Dekatkan mikrofon · Min 3 detik</p>`}
-${phase==="idle"&&modelStatus==="error"&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginTop:16,textAlign:"left"}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Model Tidak Ditemukan</span></div><p style=${{fontSize:13,color:"#48484A",margin:0,lineHeight:1.5}}>Pastikan folder <b>tfjs_model/</b> berisi <b>model.json</b> dan file weights (*.bin) di lokasi yang sama dengan file HTML ini. Model TFJS wajib untuk klasifikasi.</p></div>`}
+${phase==="idle"&&modelStatus==="error"&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginTop:16,textAlign:"left"}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Model Gagal Dimuat</span></div><p style=${{fontSize:13,color:"#48484A",margin:"0 0 8px",lineHeight:1.5}}>Pastikan folder <b>tfjs_model/</b> berisi <b>model.json</b> dan file weights (*.bin) di lokasi yang sama dengan file HTML ini.</p>${modelErr&&html`<div style=${{fontSize:11,color:"#8E8E93",padding:"8px 12px",borderRadius:10,background:"rgba(0,0,0,0.04)",wordBreak:"break-all",lineHeight:1.4,fontFamily:"monospace"}}>${modelErr}</div>`}</div>`}
 </div>
 
 ${err&&html`<div className="gl" style=${{background:"rgba(255,69,58,0.08)",border:"1px solid rgba(255,69,58,0.15)",padding:18,marginBottom:20}}><div style=${{display:"flex",alignItems:"center",gap:10,color:"#FF453A",marginBottom:6}}><${Icon} name="alert" size=${20}/><span style=${{fontWeight:600}}>Error</span></div><p style=${{fontSize:14,color:"#48484A",margin:0}}>${err}</p>${phase!=="recording"&&html`<button onClick=${reset} style=${{marginTop:14,background:"#FFF",border:"1px solid rgba(255,69,58,0.2)",borderRadius:12,padding:"10px 24px",color:"#FF453A",fontSize:15,cursor:"pointer",fontWeight:600}}>Coba Lagi</button>`}</div>`}
