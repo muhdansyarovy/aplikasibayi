@@ -274,11 +274,11 @@ ${needKey&&html`<${KeyModal} onSave=${function(k){setNeedKey(false);if(k)setAkd(
 <div style=${{maxWidth:460,margin:"0 auto",padding:"0 20px 48px"}}>
 
 <div style=${{textAlign:"center",margin:"10px 0 32px",height:140,display:"flex",alignItems:"center",justifyContent:"center"}}>
-<div className="gl" style=${{width:phase==="idle"?140:phase==="recording"?220:180,height:phase==="idle"?140:80,borderRadius:phase==="idle"?70:40,display:"flex",flexDirection:phase==="idle"?"column":"row",alignItems:"center",justifyContent:"center",gap:phase==="idle"?8:16,transition:"all 0.5s cubic-bezier(0.34,1.56,0.64,1)",background:phase==="recording"?"rgba(10,132,255,0.1)":"var(--gl)",border:phase==="recording"?"1px solid rgba(10,132,255,0.3)":"1px solid var(--gb)",position:"relative"}}>
+<div className="gl" style=${{width:phase==="idle"?140:phase==="recording"?220:180,height:phase==="idle"?140:80,borderRadius:phase==="idle"?70:40,display:"flex",flexDirection:phase==="idle"?"column":"row",alignItems:"center",justifyContent:"center",gap:phase==="idle"?8:16,transition:"all 0.5s cubic-bezier(0.34,1.56,0.64,1)",background:phase==="recording"?"rgba(10,132,255,0.1)":phase==="analyzing"?"rgba(191,90,242,0.08)":"var(--gl)",border:phase==="recording"?"1px solid rgba(10,132,255,0.3)":phase==="analyzing"?"1px solid rgba(191,90,242,0.3)":"1px solid var(--gb)",position:"relative"}}>
 ${phase==="recording"&&html`<div style=${{position:"absolute",inset:-6,borderRadius:46,border:"2px solid rgba(10,132,255,0.3)",animation:"breathe 2s ease-in-out infinite"}}/>`}
-${phase==="analyzing"&&html`<div style=${{position:"absolute",inset:-3,borderRadius:43,border:"3px solid transparent",borderTopColor:"#0A84FF",animation:"spin 1s linear infinite"}}/>`}
+${phase==="analyzing"&&html`<div style=${{position:"absolute",inset:-4,borderRadius:44,border:"2px solid rgba(191,90,242,0.5)",animation:"pulseGlow 1.5s infinite"}}/>`}
 <div style=${{color:phase==="recording"?"#0A84FF":phase==="analyzing"?"#BF5AF2":"#1C1C1E"}}><${Icon} name=${phase==="analyzing"?"cpu":phase==="recording"?"mic":phase==="results"?"check":"smile"} size=${phase==="idle"?44:32} strokeWidth=${phase==="idle"?1.5:2}/></div>
-${phase!=="idle"&&html`<span style=${{fontSize:22,fontWeight:700,color:phase==="recording"?"#0A84FF":"#1C1C1E"}}>${phase==="recording"?fmt(elapsed):phase==="analyzing"?"Analisis...":"Selesai"}</span>`}
+${phase!=="idle"&&html`<span style=${{fontSize:22,fontWeight:700,color:phase==="recording"?"#0A84FF":phase==="analyzing"?"#BF5AF2":"#1C1C1E"}}>${phase==="recording"?fmt(elapsed):phase==="analyzing"?"Analisis...":"Selesai"}</span>`}
 </div></div>
 
 ${phase==="recording"&&html`<div style=${{marginBottom:16,animation:"fadeIn 0.4s"}}><div style=${{fontSize:12,color:"#8E8E93",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:"1px"}}>Waveform</div><${Wave} aRef=${anR} rec=${true}/></div>`}
