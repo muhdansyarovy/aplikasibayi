@@ -112,22 +112,55 @@ x.save();x.translate(8,H/2);x.rotate(-Math.PI/2);x.fillText("kg",0,0);x.restore(
 var lx=pad+4,ly=16;x.font="bold 8px -apple-system";
 x.fillStyle=p.gender==="P"?"#FF375F":"#0A84FF";x.fillText("— WHO median",lx+30,ly);
 x.fillStyle="#FF9F0A";x.fillText("● Bayi",lx+90,ly);
-},[p.data,p.gender]);
-return h`<canvas ref=${ref} style=${{width:"100%",height:200,borderRadius:14,background:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.6)"}}/>`;};
+},[p.data,p.gender,p.h]);
+return h`<canvas ref=${ref} style=${{width:"100%",height:p.h||200,borderRadius:14,background:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.6)"}}/>`;};
 
-/* AI CHAT */
+/* CHART ZOOM - tap to fullscreen */
+function ChartZoom(p){var _fs=us(false),fs=_fs[0],sFs=_fs[1];
+return h`<div style=${{marginBottom:12}}>
+<div onClick=${function(){sFs(true);}} style=${{cursor:"pointer",position:"relative"}}>
+<${GrowthChart} data=${p.data} gender=${p.gender} h=${200}/>
+<div style=${{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,0.5)",borderRadius:6,padding:"3px 8px",fontSize:9,color:"#FFF",fontWeight:600}}>Tap untuk perbesar</div>
+</div>
+<div style=${{fontSize:9,color:"#C7C7CC",textAlign:"center",marginTop:4}}>Garis: WHO standard · Titik: data bayi</div>
+${fs&&h`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,animation:"fadeIn 0.2s"}} onClick=${function(){sFs(false);}}>
+<div style=${{width:"100%",maxWidth:600,background:"#FFF",borderRadius:16,padding:16,overflow:"hidden"}} onClick=${function(e){e.stopPropagation();}}>
+<div style=${{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><span style=${{fontWeight:700,fontSize:15}}>Grafik Pertumbuhan WHO</span><button onClick=${function(){sFs(false);}} style=${{border:"none",background:"rgba(0,0,0,0.06)",borderRadius:8,width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>✕</button></div>
+<${GrowthChart} data=${p.data} gender=${p.gender} h=${340}/>
+<div style=${{display:"flex",justifyContent:"center",gap:16,marginTop:10,fontSize:11,color:"#8E8E93"}}>
+<span style=${{color:p.gender==="P"?"#FF375F":"#0A84FF"}}>— Median WHO</span>
+<span style=${{color:p.gender==="P"?"rgba(255,55,95,0.4)":"rgba(10,132,255,0.4)"}}>--- ±2 SD</span>
+<span style=${{color:"#FF9F0A"}}>● Data Bayi</span>
+</div>
+</div></div>`}
+</div>`;};
+/* AI CHAT - Expert System Style */
 function AiChat(p){var _m=us([]),ms=_m[0],sM=_m[1];var _i=us(""),iv=_i[0],sI=_i[1];var _l=us(false),ld=_l[0],sL=_l[1];var _o=us(false),op=_o[0],sO=_o[1];
 var qs=p.qs||["Kapan ke dokter?","Teknik menenangkan?","Normal untuk usia?"];
+/* Expert system diagnostic questions - AI bertanya ke user */
+var expertQs=["Berapa usia bayi saat ini (dalam bulan)?","Sudah berapa lama bayi menangis?","Apakah ada demam, muntah, atau diare?","Kapan terakhir bayi menyusu/makan?","Apakah popok sudah diganti baru-baru ini?","Bagaimana pola tidur bayi hari ini?"];
 function send(q){var question=q||iv.trim();if(!question||ld)return;sI("");sL(true);sM(function(pr){return pr.concat([{r:"u",t:question}]);});
-aiChat(question,p.ctx||{}).then(function(a){sL(false);sM(function(pr){return pr.concat([{r:"a",t:a}]);});});}
+var sysExtra=ms.length>0?" Ini adalah percakapan lanjutan. Pertimbangkan jawaban sebelumnya.":"";
+var history=ms.concat([{r:"u",t:question}]);
+var chatCtx=Object.assign({},p.ctx||{},{conversationHistory:history.map(function(m){return(m.r==="u"?"Orang tua: ":"Dokter AI: ")+m.t;}).join("\n")});
+aiChat(question,chatCtx).then(function(a){sL(false);sM(function(pr){return pr.concat([{r:"a",t:a}]);});});}
+function startExpert(){sO(true);sL(true);sM([]);
+var chatCtx=Object.assign({},p.ctx||{});
+aiChat("Anda adalah dokter anak AI yang sedang melakukan konsultasi. Mulailah dengan menyapa dan bertanya 2-3 pertanyaan diagnostik kepada orang tua untuk memahami kondisi bayi lebih baik. Pertanyaan harus spesifik dan membantu Anda memberikan saran yang tepat. Jangan langsung memberi saran, bertanya dulu.",chatCtx).then(function(a){sL(false);sM([{r:"a",t:a}]);});}
 return h`<div className="gl" style=${{overflow:"hidden",marginTop:10}}>
-<button onClick=${function(){sO(!op);}} style=${{width:"100%",padding:"14px 16px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit"}}><div style=${{width:30,height:30,borderRadius:10,background:"rgba(50,215,75,0.1)",display:"flex",alignItems:"center",justifyContent:"center",color:"#32D74B"}}><${Ic} name="help" size=${16}/></div><div style=${{flex:1,textAlign:"left"}}><div style=${{fontWeight:600,fontSize:13}}>Tanya AI Lanjutan</div><div style=${{fontSize:10,color:"#8E8E93",marginTop:1}}>Gejala, penanganan, dll</div></div><span style=${{fontSize:11,color:"#C7C7CC",transform:op?"rotate(90deg)":"none",transition:"0.2s"}}>▶</span></button>
+<button onClick=${function(){sO(!op);}} style=${{width:"100%",padding:"14px 16px",border:"none",background:"transparent",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit"}}><div style=${{width:30,height:30,borderRadius:10,background:"rgba(50,215,75,0.1)",display:"flex",alignItems:"center",justifyContent:"center",color:"#32D74B"}}><${Ic} name="help" size=${16}/></div><div style=${{flex:1,textAlign:"left"}}><div style=${{fontWeight:600,fontSize:13}}>Tanya AI Lanjutan</div><div style=${{fontSize:10,color:"#8E8E93",marginTop:1}}>Konsultasi gejala & penanganan</div></div><span style=${{fontSize:11,color:"#C7C7CC",transform:op?"rotate(90deg)":"none",transition:"0.2s"}}>▶</span></button>
 ${op&&h`<div style=${{padding:"0 14px 14px"}}>
-${ms.length===0&&h`<div style=${{marginBottom:10}}><div style=${{fontSize:10,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Pertanyaan Cepat</div><div style=${{display:"flex",flexWrap:"wrap",gap:5}}>${qs.map(function(q,i){return h`<button key=${i} onClick=${function(){send(q);}} style=${{background:"rgba(50,215,75,0.06)",border:"1px solid rgba(50,215,75,0.15)",borderRadius:10,padding:"6px 12px",fontSize:12,fontWeight:500,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.3}}>${q}</button>`;})}</div></div>`}
-${ms.length>0&&h`<div style=${{maxHeight:260,overflowY:"auto",marginBottom:10,display:"flex",flexDirection:"column",gap:6}}>${ms.map(function(m,i){return m.r==="u"?h`<div key=${i} style=${{alignSelf:"flex-end",background:"#0A84FF",color:"#FFF",padding:"8px 14px",borderRadius:"16px 16px 4px 16px",fontSize:13,lineHeight:1.4,maxWidth:"85%"}}>${m.t}</div>`:h`<div key=${i} style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"10px 14px",borderRadius:"16px 16px 16px 4px",fontSize:13,lineHeight:1.6,maxWidth:"90%"}}>${m.t}</div>`;})}
+${ms.length===0&&h`<div>
+<div style=${{fontSize:10,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Pertanyaan Cepat</div>
+<div style=${{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>${qs.map(function(q,i){return h`<button key=${i} onClick=${function(){send(q);}} style=${{background:"rgba(50,215,75,0.06)",border:"1px solid rgba(50,215,75,0.15)",borderRadius:10,padding:"6px 12px",fontSize:12,fontWeight:500,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.3}}>${q}</button>`;})}</div>
+<div style=${{fontSize:10,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6}}>Konsultasi Expert</div>
+<button onClick=${startExpert} style=${{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid rgba(191,90,242,0.2)",background:"rgba(191,90,242,0.06)",fontSize:12,fontWeight:600,color:"#BF5AF2",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}><${Ic} name="bot" size=${16} color="#BF5AF2"/>AI dokter akan bertanya untuk diagnosis lebih akurat</button>
+</div>`}
+${ms.length>0&&h`<div style=${{maxHeight:280,overflowY:"auto",marginBottom:10,display:"flex",flexDirection:"column",gap:6,WebkitOverflowScrolling:"touch"}}>${ms.map(function(m,i){return m.r==="u"?h`<div key=${i} style=${{alignSelf:"flex-end",background:"#0A84FF",color:"#FFF",padding:"8px 14px",borderRadius:"16px 16px 4px 16px",fontSize:13,lineHeight:1.4,maxWidth:"85%"}}>${m.t}</div>`:h`<div key=${i} style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"10px 14px",borderRadius:"16px 16px 16px 4px",fontSize:13,lineHeight:1.6,maxWidth:"90%"}}>${m.t}</div>`;})}
 ${ld&&h`<div style=${{alignSelf:"flex-start",background:"rgba(0,0,0,0.04)",padding:"10px 14px",borderRadius:"16px 16px 16px 4px",fontSize:13,color:"#8E8E93",display:"flex",alignItems:"center",gap:6}}><div style=${{width:5,height:5,borderRadius:3,background:"#8E8E93",animation:"blink 1s infinite"}}/>Sedang menjawab...</div>`}
 </div>`}
-<div style=${{display:"flex",gap:4}}><input class="fi" value=${iv} onInput=${function(e){sI(e.target.value);}} onKeyDown=${function(e){if(e.key==="Enter")send();}} placeholder="Tanya..." style=${{fontSize:13,padding:"8px 12px"}}/><button onClick=${function(){send();}} disabled=${ld||!iv.trim()} style=${{width:38,height:38,borderRadius:10,border:"none",background:iv.trim()?"#32D74B":"rgba(0,0,0,0.04)",color:iv.trim()?"#FFF":"#C7C7CC",cursor:iv.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
+${ms.length>0&&h`<div style=${{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>${expertQs.filter(function(q){return!ms.some(function(m){return m.t.indexOf(q)!==-1;});}).slice(0,3).map(function(q,i){return h`<button key=${i} onClick=${function(){send(q);}} style=${{background:"rgba(10,132,255,0.06)",border:"1px solid rgba(10,132,255,0.12)",borderRadius:8,padding:"4px 10px",fontSize:10,fontWeight:500,color:"#0A84FF",cursor:"pointer",fontFamily:"inherit"}}>${q}</button>`;})}</div>`}
+<div style=${{display:"flex",gap:4}}><input class="fi" value=${iv} onInput=${function(e){sI(e.target.value);}} onKeyDown=${function(e){if(e.key==="Enter")send();}} placeholder="Jawab atau tanya..." style=${{fontSize:13,padding:"8px 12px"}}/><button onClick=${function(){send();}} disabled=${ld||!iv.trim()} style=${{width:38,height:38,borderRadius:10,border:"none",background:iv.trim()?"#32D74B":"rgba(0,0,0,0.04)",color:iv.trim()?"#FFF":"#C7C7CC",cursor:iv.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
 </div>`}</div>`;};
 
 /* RESULT CARD */
@@ -207,7 +240,7 @@ ${pr.bd&&h`<div style=${{fontSize:11,color:"#8E8E93",marginTop:1}}>${ageStr()}</
 
 <div className="gl" style=${{padding:16,marginBottom:12}}>
 <div style=${{fontWeight:700,fontSize:14,marginBottom:10}}>Pertumbuhan</div>
-${pr.bd&&chartData.length>0&&h`<div style=${{marginBottom:12}}><${GrowthChart} data=${chartData} gender=${pr.gn||"L"}/><div style=${{fontSize:9,color:"#C7C7CC",textAlign:"center",marginTop:4}}>Garis: WHO standard · Titik: data bayi</div></div>`}
+${pr.bd&&chartData.length>0&&h`<${ChartZoom} data=${chartData} gender=${pr.gn||"L"}/>`}
 <div style=${{display:"flex",gap:4,marginBottom:6}}>
 <div style=${{flex:1}}><div style=${{fontSize:9,fontWeight:600,color:"#8E8E93",marginBottom:2}}>Berat (kg)*</div><input class="fi" type="number" step="0.1" value=${nw} onInput=${function(e){sW(e.target.value);}} placeholder="3.5" style=${{fontSize:13,padding:"8px 10px"}}/></div>
 <div style=${{flex:1}}><div style=${{fontSize:9,fontWeight:600,color:"#8E8E93",marginBottom:2}}>Tinggi (cm)</div><input class="fi" type="number" step="0.1" value=${nh} onInput=${function(e){sHt(e.target.value);}} placeholder="50" style=${{fontSize:13,padding:"8px 10px"}}/></div>
@@ -242,7 +275,8 @@ var totalCries=hi.length;
 var last7=hi.filter(function(e){return Date.now()-e.ts<7*86400000;}).length;
 
 return h`<div style=${{padding:"10px 16px"}}>
-<div style=${{fontWeight:700,fontSize:17,marginBottom:12}}>Dashboard</div>
+<div style=${{fontWeight:700,fontSize:17,marginBottom:4}}>Dashboard</div>
+${pr&&pr.name&&h`<div style=${{fontSize:12,color:"#8E8E93",marginBottom:10}}>Ringkasan untuk ${pr.name}</div>`}
 
 <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
 ${[[totalCries+"","Total Rekaman","mic","#0A84FF"],[last7+"","7 Hari Terakhir","clock","#BF5AF2"],[verified+"/"+totalCries,"Terverifikasi","check","#32D74B"],[accuracy!==null?Math.round(accuracy*100)+"%":"—","Akurasi Model","cpu","#FF9F0A"]].map(function(c,i){return h`<div key=${i} className="gl" style=${{padding:"12px 14px"}}>
@@ -268,7 +302,7 @@ ${latestW.ht&&h`<div><div style=${{fontSize:22,fontWeight:800,color:"#5AC8FA"}}>
 <div style=${{flex:1,textAlign:"right"}}><div style=${{fontSize:11,color:"#8E8E93"}}>${new Date(latestW.d).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div><div style=${{fontSize:10,color:"#C7C7CC"}}>${gr.length} catatan</div></div>
 </div></div>`}
 
-${hi.length>0&&h`<div className="gl" style=${{padding:16}}>
+${hi.length>0&&h`<div className="gl" style=${{padding:16,marginBottom:12}}>
 <div style=${{fontWeight:700,fontSize:14,marginBottom:8}}>Rekaman Terakhir</div>
 ${hi.slice(0,5).map(function(e){var db=CDB[e.pr]||CDB.unknown;
 return h`<div key=${e.id} style=${{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,0.04)"}}>
@@ -276,12 +310,25 @@ return h`<div key=${e.id} style=${{display:"flex",alignItems:"center",gap:8,padd
 </div>`;})}
 </div>`}
 
+<${DashAI} hi=${hi} gr=${gr} pr=${pr} topCry=${topCry} accuracy=${accuracy} verified=${verified}/>
+
 ${totalCries===0&&gr.length===0&&h`<div style=${{padding:"40px 0",textAlign:"center"}}><${Ic} name="grid" size=${36} color="#C7C7CC" sw=${1.5}/><p style=${{fontSize:13,color:"#8E8E93",marginTop:8}}>Mulai rekam tangisan atau isi data pertumbuhan.</p></div>`}
 </div>`;};
 
+/* DASHBOARD AI RECAP */
+function DashAI(p){
+var _ai=us(""),ai=_ai[0],sAi=_ai[1];var _al=us(false),al=_al[0],sAl=_al[1];
+function ask(){if(!window.__GK){sAi("Atur API Key Groq terlebih dahulu.");return;}sAl(true);
+var ctx={babyName:p.pr?p.pr.name:"Bayi",birthDate:p.pr?p.pr.bd:null,gender:p.pr?p.pr.gn:null,totalCries:p.hi.length,cryPatterns:p.topCry.map(function(tc){return{type:(CDB[tc[0]]||CDB.unknown).label,count:tc[1]};}),accuracy:p.accuracy!==null?Math.round(p.accuracy*100)+"%":"belum ada",verified:p.verified,growthRecords:p.gr.slice(-5).map(function(r){return{date:r.d,weight:r.w,height:r.ht};}),recentCries:p.hi.slice(0,10).map(function(e){return{prediction:(CDB[e.pr]||CDB.unknown).label,confidence:e.cf,manualLabel:e.ml?(CDB[e.ml]||CDB.unknown).label:null,date:new Date(e.ts).toLocaleDateString("id-ID")};})};
+aiChat("Berikan rekap menyeluruh kondisi bayi ini berdasarkan semua data yang tersedia: pola tangisan, data pertumbuhan (bandingkan dengan WHO standard), akurasi prediksi model, dan saran perawatan spesifik. Jika ada pola tangisan dominan, jelaskan apa artinya. Tulis 3-4 paragraf ringkas.",ctx).then(function(a){sAi(a);sAl(false);});}
+return h`<div className="gl" style=${{padding:16,marginBottom:12,background:"rgba(191,90,242,0.04)",border:"1px solid rgba(191,90,242,0.1)"}}>
+<div style=${{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style=${{width:28,height:28,borderRadius:8,background:"rgba(191,90,242,0.12)",display:"flex",alignItems:"center",justifyContent:"center",color:"#BF5AF2"}}><${Ic} name="bot" size=${15}/></div><span style=${{fontWeight:700,fontSize:14,color:"#BF5AF2"}}>Rekap AI</span></div>
+${ai?h`<p style=${{fontSize:13,lineHeight:1.6,margin:"0 0 10px",color:"#48484A"}}>${ai}</p>`:h`<p style=${{fontSize:12,color:"#8E8E93",margin:"0 0 10px"}}>Dapatkan ringkasan kondisi bayi berdasarkan seluruh data tangisan dan pertumbuhan.</p>`}
+<button onClick=${ask} disabled=${al} style=${{width:"100%",padding:"10px",borderRadius:12,border:"none",background:"#BF5AF2",color:"#FFF",fontSize:13,fontWeight:600,cursor:al?"wait":"pointer",opacity:al?0.6:1}}>${al?"Menganalisis...":"Buat Rekap AI"}</button>
+</div>`;};
 /* MAIN APP */
 function App(){
-var _tab=us("rec"),tab=_tab[0],sTab=_tab[1];
+var _tab=us("dash"),tab=_tab[0],sTab=_tab[1];
 var _ph=us("idle"),ph=_ph[0],sPh=_ph[1];var _el=us(0),el=_el[0],sEl=_el[1];
 var _sd=us([]),sd=_sd[0],sSd=_sd[1];var _rs=us(null),rs=_rs[0],sRs=_rs[1];
 var _an=us(""),an=_an[0],sAn=_an[1];var _ad=us(""),ad=_ad[0],sAd=_ad[1];
@@ -391,7 +438,7 @@ ${tab==="prof"&&h`<div style=${{paddingTop:40}}><${PTab}/></div>`}
 ${tab==="dash"&&h`<div style=${{paddingTop:40}}><${DTab}/></div>`}
 
 <div className="btab">
-${[["rec","mic","Rekam"],["hist","file","Riwayat"],["prof","user","Profil"],["dash","grid","Dashboard"]].map(function(t){return h`<button key=${t[0]} className=${tab===t[0]?"on":""} onClick=${function(){sTab(t[0]);}}><${Ic} name=${t[1]} size=${18} color=${tab===t[0]?"#0A84FF":"#8E8E93"}/>${t[2]}</button>`;})}
+${[["dash","grid","Dashboard"],["rec","mic","Rekam"],["hist","file","Riwayat"],["prof","user","Profil"]].map(function(t){return h`<button key=${t[0]} className=${tab===t[0]?"on":""} onClick=${function(){sTab(t[0]);}}><${Ic} name=${t[1]} size=${18} color=${tab===t[0]?"#0A84FF":"#8E8E93"}/>${t[2]}</button>`;})}
 </div>
 </div>`;};
 ReactDOM.createRoot(document.getElementById("root")).render(h`<${App}/>`);
